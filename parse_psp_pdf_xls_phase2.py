@@ -772,7 +772,13 @@ def parse_xls(filepath):
     # TimeSeries sheet (FY2025+, optional) — 15-min SCADA data, wide format
     if "TimeSeries" in sheets:
         df_ts = _xls_read_sheet(filepath, "TimeSeries")
-        row.update(_xls_parse_timeseries(df_ts))
+        ts_data = _xls_parse_timeseries(df_ts)
+        if ts_data:
+            row.update(ts_data)
+        else:
+            # Sheet exists but has no 15-min rows — Grid India did not publish
+            # SCADA data for this date. The daily summary (MOP_E) is still valid.
+            print(f"  NOTE: {Path(filepath).name} — TimeSeries sheet has no 15-min data rows (Grid India did not publish SCADA data for this date)")
 
     return row
 
@@ -886,7 +892,16 @@ def build_timeseries_long(input_path, output_csv):
             df_ts = _xls_read_sheet(str(f), "TimeSeries")
             records = _xls_parse_timeseries_records(df_ts)
             if not records:
-                errors.append((f.name, "TimeSeries sheet present but unparseable"))
+                # Distinguish between a broken sheet and one that Grid India
+                # published with no 15-min data (header present, rows absent).
+                has_time_header = any(
+                    str(df_ts.iloc[i, 0]).strip().upper() == "TIME"
+                    for i in range(min(10, len(df_ts)))
+                )
+                if has_time_header:
+                    skipped.append(f.name + " (TimeSeries header present but no data rows — Grid India did not publish 15-min data for this date)")
+                else:
+                    errors.append((f.name, "TimeSeries sheet present but unparseable (no TIME header found)"))
                 continue
 
             for rec in records:
