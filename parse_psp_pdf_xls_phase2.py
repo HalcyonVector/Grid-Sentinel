@@ -641,22 +641,69 @@ def _xls_parse_crossborder(df):
     return result
 
 
+def _parse_timeseries_time_cell(val):
+    """
+    Decode a single TIME-column cell from the TimeSeries sheet into (hh, mm).
+
+    Three formats appear across the corpus:
+      1. String  "H:MM:SS"  or  "H:MM"   — seen in most Nov-2024 files
+         (xlrd reads the cell as a plain string because the cell is formatted
+         as Text in the workbook).
+      2. float fraction-of-day  0.0 … <1.0  — seen when xlrd reads a true
+         XLS time cell (xlrd type=3) that pandas surfaces as a float.
+         e.g. 0:15 → 0.010416666…  (= 15 / (24*60))
+      3. datetime.time object  — seen in some Nov-2024 files where pandas
+         converts an XLS time cell to a Python datetime.time.
+
+    Returns (hh, mm) as ints, or None if the cell is not a recognisable time.
+    """
+    if val is None:
+        return None
+
+    # Case 3: pandas already decoded it to datetime.time
+    if hasattr(val, 'hour') and hasattr(val, 'minute'):
+        return val.hour, val.minute
+
+    # Case 2: float fraction of a day (xlrd type=3 surfaced as float by pandas)
+    try:
+        f = float(val)
+        if 0.0 <= f < 1.0:
+            total_minutes = round(f * 24 * 60)
+            hh, mm = divmod(total_minutes, 60)
+            return hh % 24, mm
+    except (TypeError, ValueError):
+        pass
+
+    # Case 1: string "H:MM:SS" or "H:MM"
+    s = str(val).strip()
+    m = re.match(r"^(\d{1,2}):(\d{2})(?::\d{2})?$", s)
+    if m:
+        return int(m.group(1)) % 24, int(m.group(2))
+
+    return None  # disclaimer row / unexpected content → stop parsing
+
+
 def _xls_parse_timeseries_records(df):
     """
-    Parse the TimeSeries sheet (FY2025+ only) into a list of per-15-min-block
-    records — the shared core used by both the wide (one-row-per-day) and
-    long (one-row-per-15-min-block) builders below.
+    Parse the TimeSeries sheet into a list of per-15-min-block records —
+    the shared core used by both the wide (one-row-per-day) and long
+    (one-row-per-15-min-block) builders.
 
     Sheet layout: a header row with TIME / FREQUENCY(Hz) / DEMAND MET(MW) /
     NUCLEAR(MW) / WIND(MW) / SOLAR(MW) / HYDRO**(MW) / GAS(MW) / THERMAL(MW) /
     OTHERS*(MW) / NET DEMAND MET(MW) / TOTAL GENERATION(MW) /
-    NET TRANSNATIONAL EXCHANGE(MW), followed by ~96 rows (one per 15-min slot,
-    e.g. "0:00", "0:15", ... "23:45").
+    NET TRANSNATIONAL EXCHANGE(MW), followed by ~96 data rows (one per
+    15-min slot: 0:00, 0:15, … 23:45).
+
+    Handles all known TIME-column encodings via _parse_timeseries_time_cell():
+      • "H:MM:SS" / "H:MM" strings  (most Nov-2024 files)
+      • xlrd float fraction-of-day  (some Nov-2024 files)
+      • datetime.time objects       (pandas coercion of XLS time cells)
 
     Returns: list of dicts, each like
         {"hhmm": "0000", "time": "00:00", "freq_hz": 49.99,
          "demand_met_mw": 147488.0, "nuclear_mw": ..., ...}
-    Does NOT attach a date — callers attach it themselves.
+    Does NOT attach a date — callers do that.
     """
     records = []
 
@@ -677,7 +724,7 @@ def _xls_parse_timeseries_records(df):
     headers = [_norm(c) for c in df.iloc[header_idx]]
 
     # Most-specific labels first to avoid substring collisions
-    # (e.g. "NET DEMAND MET" must be matched before plain "DEMAND MET").
+    # (e.g. "NET DEMAND MET" must be checked before plain "DEMAND MET").
     label_order = [
         ("NET TRANSNATIONAL EXCHANGE", "net_trans_exchange_mw"),
         ("NET DEMAND MET",             "net_demand_met_mw"),
@@ -705,17 +752,14 @@ def _xls_parse_timeseries_records(df):
     if not col_metric:
         return records
 
-    time_pat = re.compile(r"^(\d{1,2}):(\d{2})$")
-
     for i in range(header_idx + 1, len(df)):
-        if pd.isna(df.iloc[i, 0]):
-            continue  # blank separator row between header and data
-        raw_time = str(df.iloc[i, 0]).strip()
-        m = time_pat.match(raw_time)
-        if not m:
-            # Stops at the first non-blank, non-time row (e.g. trailing disclaimer text)
-            break
-        hh, mm = int(m.group(1)), int(m.group(2))
+        cell_val = df.iloc[i, 0]
+        if pd.isna(cell_val):
+            continue  # blank separator row — skip, don't stop
+        parsed = _parse_timeseries_time_cell(cell_val)
+        if parsed is None:
+            break  # disclaimer / footer text — stop
+        hh, mm = parsed
         rec = {"hhmm": f"{hh:02d}{mm:02d}", "time": f"{hh:02d}:{mm:02d}"}
         for j, metric_key in col_metric.items():
             rec[metric_key] = _to_float(df.iloc[i, j]) if j < df.shape[1] else None
@@ -769,7 +813,7 @@ def parse_xls(filepath):
         df_cb = _xls_read_sheet(filepath, "CrossBorder")
         row.update(_xls_parse_crossborder(df_cb))
 
-    # TimeSeries sheet (FY2025+, optional) — 15-min SCADA data, wide format
+    # TimeSeries sheet (present from Nov-2024 onwards) — 15-min SCADA data, wide format
     if "TimeSeries" in sheets:
         df_ts = _xls_read_sheet(filepath, "TimeSeries")
         row.update(_xls_parse_timeseries(df_ts))
@@ -847,8 +891,9 @@ def build_timeseries_long(input_path, output_csv):
     solar_mw, hydro_mw, gas_mw, thermal_mw, others_mw, net_demand_met_mw,
     total_gen_mw, net_trans_exchange_mw.
 
-    Only XLS files with a TimeSeries sheet (FY2025+) contribute rows; older
-    files are silently skipped since they have no 15-min data to give.
+    Only XLS files with a TimeSeries sheet (present from Nov-2024 onwards)
+    contribute rows; older files are silently skipped since they have no
+    15-min data to give.
     """
     p = Path(input_path)
     if p.is_file():
