@@ -111,6 +111,11 @@ def _pdf_regional_summary(tables):
                 "time" not in label and "hour" not in label:
             for r in col_idx:
                 result[f"max_demand_met_{r.lower()}_mw"] = get(r)
+        elif "time" in label and "maximum demand met" in label:
+            for r in col_idx:
+                i = col_idx.get(r)
+                v = row[i] if i is not None and i < len(row) else None
+                result[f"time_max_demand_met_{r.lower()}"] = str(v).strip() if v is not None else None
 
     return result
 
@@ -441,6 +446,14 @@ def _xls_parse_mop_e(df):
                     "time" not in lbl and "hour" not in lbl:
                 for r in list(col_map):
                     result[f"max_demand_met_{r.lower()}_mw"] = gr(r)
+            elif "time" in lbl and "maximum demand met" in lbl:
+                for r in list(col_map):
+                    j = col_map.get(r)
+                    v = cell(i, j) if j is not None else None
+                    if v is not None and not pd.isna(v):
+                        result[f"time_max_demand_met_{r.lower()}"] = str(v).strip()
+                    else:
+                        result[f"time_max_demand_met_{r.lower()}"] = None
 
     # ── Section B: frequency ─────────────────────────────────────────────────
     freq_header = None
