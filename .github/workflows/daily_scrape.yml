@@ -11,6 +11,10 @@ on:
         description: 'Override data date (YYYY-MM-DD). Leave blank for auto (yesterday).'
         required: false
         default: ''
+      scan:
+        description: 'Parse all unparsed files already in File3_Raw (yes/no).'
+        required: false
+        default: 'no'
 
 permissions:
   contents: write   # needed to commit updated CSVs back to repo
@@ -45,10 +49,10 @@ jobs:
       - name: Run daily update
         id: scrape
         run: |
-          if [ -n "${{ github.event.inputs.date }}" ]; then
-            python Scrapings/update_live.py --date "${{ github.event.inputs.date }}"
-          elif [ "${{ github.event_name }}" = "push" ]; then
+          if [ "${{ github.event.inputs.scan }}" = "yes" ] || [ "${{ github.event_name }}" = "push" ]; then
             python Scrapings/update_live.py --scan
+          elif [ -n "${{ github.event.inputs.date }}" ]; then
+            python Scrapings/update_live.py --date "${{ github.event.inputs.date }}"
           else
             python Scrapings/update_live.py
           fi
