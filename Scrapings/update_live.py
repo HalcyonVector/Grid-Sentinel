@@ -16,18 +16,13 @@ Usage:
 """
 
 import argparse
-import re
+import shutil
 import sys
 import tempfile
-import time
 from datetime import date, timedelta
 from pathlib import Path
 
 import pandas as pd
-import requests
-import urllib3
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ── Paths (relative to repo root) ────────────────────────────────────────────
 REPO_ROOT    = Path(__file__).resolve().parent.parent
@@ -39,113 +34,25 @@ FILE3_RAW    = REPO_ROOT / "File3_Raw"
 
 sys.path.insert(0, str(SCRAPERS_DIR))
 
-# ── URL patterns (same logic as download_psp_both.py) ─────────────────────────
-HEADERS         = {"User-Agent": "Mozilla/5.0 (research data collection)"}
-NEW_CDN_START   = date(2025, 5, 28)
-WEBCDN_OLD_BASE = "https://webcdn.grid-india.in/files/grdw/uploads/daily-reports/psp-reports"
-OLD_BASE        = "https://report.grid-india.in/ReportData/Daily%20Report/PSP%20Report"
-LISTING_URL     = "https://grid-india.in/en/reports/daily-psp-report"
-FULL_URL_RE     = re.compile(
-    r'(https://webcdn\.grid-india\.in/files/grdw/\d{4}/\d{2}/(\d{2}\.\d{2}\.\d{2})_NLDC_PSP_\d+\.(xls|pdf))'
-)
-
-
-def fy_folder(d: date) -> str:
-    return f"{d.year}-{d.year+1}" if d.month >= 4 else f"{d.year-1}-{d.year}"
-
-
-def stem(d: date) -> str:
-    return d.strftime("%d.%m.%y")
-
-
-def webcdn_old_url(d: date, ext: str) -> str:
-    return f"{WEBCDN_OLD_BASE}/{fy_folder(d)}/{stem(d)}_NLDC_PSP.{ext}"
-
-
-def fetch_bytes(url: str):
-    try:
-        r = requests.get(url, headers=HEADERS, timeout=30, verify=False)
-        if r.status_code == 200 and len(r.content) > 2000:
-            return r.content
-    except requests.RequestException:
-        pass
-    return None
-
-
-def find_new_cdn_url(target_stem: str) -> str | None:
-    """
-    Scrape the NLDC listing page with Playwright to find the CDN URL for
-    target_stem (e.g. '25.06.26'). Only done for dates after NEW_CDN_START.
-    """
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        print("ERROR: Playwright not installed. Run: pip install playwright && playwright install chromium")
-        return None
-
-    url_found = None
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        pg = browser.new_page()
-        print(f"  Fetching NLDC listing page to find {target_stem}...")
-        pg.goto(LISTING_URL, timeout=60000, wait_until="networkidle")
-        pg.wait_for_timeout(3000)
-
-        # Try current page first (most recent files are on page 1)
-        for _ in range(3):
-            html = pg.content()
-            for m in FULL_URL_RE.finditer(html):
-                if m.group(2) == target_stem:
-                    url_found = m.group(1)
-                    break
-            if url_found:
-                break
-            # Try next page
-            next_btn = pg.query_selector("button[aria-label='Next Page']:not([disabled])")
-            if not next_btn:
-                break
-            next_btn.click()
-            pg.wait_for_timeout(2000)
-
-        browser.close()
-
-    return url_found
-
 
 def download_today(target_date: date, out_dir: Path) -> Path | None:
     """
     Download the PSP file for target_date into out_dir.
-    Returns the local file path on success, None if not available yet.
+    Delegates to download_psp_new.download_range (full CDN index scrape).
+    Returns the local file path on success, None if not found.
     """
-    s = stem(target_date)
+    from download_psp_new import download_range, stem
 
-    # ── 1. Try old CDN direct URLs (always works pre-NEW_CDN_START) ──────────
-    for ext in ("xls", "pdf"):
-        url = webcdn_old_url(target_date, ext)
-        content = fetch_bytes(url)
-        if content:
-            dest = out_dir / f"{s}_NLDC_PSP.{ext}"
-            dest.write_bytes(content)
-            print(f"  Downloaded via old CDN: {dest.name} ({len(content):,} bytes)")
-            return dest
+    # Return early if already downloaded
+    existing = list(out_dir.glob(f"{stem(target_date)}_NLDC_PSP*"))
+    if existing:
+        print(f"  Already present: {existing[0].name}")
+        return existing[0]
 
-    # ── 2. For new CDN dates, scrape the listing page ─────────────────────────
-    if target_date >= NEW_CDN_START:
-        url = find_new_cdn_url(s)
-        if url:
-            ext = url.rsplit(".", 1)[-1]
-            content = fetch_bytes(url)
-            if content:
-                dest = out_dir / f"{s}_NLDC_PSP.{ext}"
-                dest.write_bytes(content)
-                print(f"  Downloaded via new CDN: {dest.name} ({len(content):,} bytes)")
-                return dest
-        else:
-            print(f"  {s}: not found on listing page — likely not published yet.")
-            return None
+    download_range(target_date, target_date, out_dir, delay=0)
 
-    print(f"  {s}: all download attempts failed.")
-    return None
+    result = list(out_dir.glob(f"{stem(target_date)}_NLDC_PSP*"))
+    return result[0] if result else None
 
 
 def append_study1(raw_file: Path) -> bool:
@@ -267,6 +174,8 @@ def main():
         # Normal run: try today's file (yesterday's data), and yesterday's file (day before)
         file_dates_to_try = [today, today - timedelta(1)]
 
+    from download_psp_new import stem
+
     print(f"\n=== Grid-Sentinel daily update — {date.today()} ===\n")
 
     FILE2_RAW.mkdir(exist_ok=True)
@@ -279,7 +188,6 @@ def main():
         raw_file = download_today(file_date, FILE3_RAW)
         if raw_file:
             # Copy the same file into File2_Raw
-            import shutil
             file2_dest = FILE2_RAW / raw_file.name
             if not file2_dest.exists():
                 shutil.copy2(raw_file, file2_dest)
