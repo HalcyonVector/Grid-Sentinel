@@ -41,21 +41,40 @@ def _parse_date_str(raw):
 
 
 def _pdf_extract_date(pdf):
+    from datetime import timedelta
+    # ── 1. Subject line: "for the date DD.MM.YYYY" — explicit data date, no offset needed
+    sub_re = re.compile(
+        r"for\s+the\s+date\s+(\d{1,2}[.\-/]\d{1,2}[.\-/]\d{2,4})",
+        re.IGNORECASE,
+    )
+    for page in pdf.pages[:2]:
+        text = page.extract_text() or ""
+        m = sub_re.search(text)
+        if m:
+            d = _parse_date_str(m.group(1))
+            if d:
+                return d
+
+    # ── 2. "Date of Reporting" — publication date; data is from the previous day
     text2 = (pdf.pages[1].extract_text() or "") if len(pdf.pages) > 1 else ""
     m = re.search(r"Date of Reporting\s+(\d{1,2}[-\s]\w{3}[-\s]\d{2,4})", text2)
     if m:
         d = _parse_date_str(m.group(1))
         if d:
-            return d
+            return d - timedelta(days=1)
+
+    # ── 3. Fallback: any date pattern on page 2, then page 1 — subtract 1 day
     m = re.search(r"\b(\d{1,2}-\w{3}-\d{2,4})\b", text2)
     if m:
         d = _parse_date_str(m.group(1))
         if d:
-            return d
+            return d - timedelta(days=1)
     text1 = pdf.pages[0].extract_text() or ""
     m = re.search(r"\b(\d{1,2}-\w{3}-\d{2,4})\b", text1)
     if m:
-        return _parse_date_str(m.group(1))
+        d = _parse_date_str(m.group(1))
+        if d:
+            return d - timedelta(days=1)
     return None
 
 

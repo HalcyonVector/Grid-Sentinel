@@ -289,18 +289,19 @@ def main():
         print("\nNo file available yet — will retry at next scheduled run.")
         sys.exit(1)
 
-        print(f"\nParsing {raw_file.name}...")
-        s1_changed = append_study1(raw_file)
-        s2_changed = append_study2(raw_file)
+    # ── Parse and append to CSVs ─────────────────────────────────────────────
+    print(f"\nParsing {raw_file.name}...")
+    s1_changed = append_study1(raw_file)
+    s2_changed = append_study2(raw_file)
 
-        if not s1_changed and not s2_changed:
-            print("\nNo new data added (already up to date).")
-            sys.exit(0)
+    if not s1_changed and not s2_changed:
+        print("\nNo new data added (already up to date).")
+        sys.exit(0)
 
-        print("\nRunning validation...")
-        ok = validate(s1_changed, s2_changed)
-        if not ok:
-            sys.exit(2)
+    print("\nRunning validation...")
+    ok = validate(s1_changed, s2_changed)
+    if not ok:
+        sys.exit(2)
 
     print("\nDone. CSVs updated successfully.")
     sys.exit(0)
