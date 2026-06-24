@@ -66,7 +66,7 @@ def scrape_cdn_index() -> dict[str, str]:
     index = {}
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
         pg = browser.new_page()
 
         print("Loading listing page (may take 15-20 seconds)...")
