@@ -101,7 +101,7 @@ def append_study1(raw_file: Path) -> bool:
 
     row_date = str(row["date"])
     existing = pd.read_csv(STUDY1_CSV)
-    existing["date"] = pd.to_datetime(existing["date"], format="ISO8601").dt.strftime("%Y-%m-%d")
+    existing["date"] = pd.to_datetime(existing["date"], format="mixed", dayfirst=True).dt.strftime("%Y-%m-%d")
 
     if row_date in existing["date"].values:
         print(f"  study1_daily: {row_date} already present — skipping.")
@@ -140,7 +140,7 @@ def append_study2(raw_file: Path) -> bool:
     new_date = new_rows["date"].iloc[0]
 
     existing = pd.read_csv(STUDY2_CSV)
-    existing["date"] = pd.to_datetime(existing["date"], format="ISO8601").dt.strftime("%Y-%m-%d")
+    existing["date"] = pd.to_datetime(existing["date"], format="mixed", dayfirst=True).dt.strftime("%Y-%m-%d")
 
     if new_date in existing["date"].values:
         print(f"  study2_scada: {new_date} already present — skipping.")
@@ -169,7 +169,7 @@ def validate(study1_changed: bool, study2_changed: bool):
 
     if study1_changed:
         df1 = pd.read_csv(STUDY1_CSV)
-        df1["date"] = pd.to_datetime(df1["date"], format="ISO8601")
+        df1["date"] = pd.to_datetime(df1["date"], format="mixed", dayfirst=True)
         dups = df1.duplicated("date").sum()
         if dups > 0:
             errors.append(f"study1_daily: {dups} duplicate dates after append")
