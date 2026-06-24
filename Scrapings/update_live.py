@@ -170,6 +170,10 @@ def append_study2(raw_file: Path) -> bool:
     new_rows = new_rows[existing.columns]
 
     updated = pd.concat([existing, new_rows], ignore_index=True)
+    before = len(updated)
+    updated = updated.drop_duplicates(subset=["date", "hhmm"], keep="last")
+    if len(updated) < before:
+        print(f"  study2_scada: dropped {before - len(updated)} duplicate rows.")
     updated.to_csv(STUDY2_CSV, index=False)
     print(f"  study2_scada: appended {len(new_rows)} rows for {new_date}")
     return True
