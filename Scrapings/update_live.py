@@ -192,22 +192,35 @@ def validate(study1_changed: bool, study2_changed: bool):
     return True
 
 
+def scan_and_parse() -> tuple[bool, bool]:
+    """
+    Parse all raw files in FILE3_RAW not yet reflected in the CSVs.
+    Used when triggered by a push (we don't know which date was pushed).
+    Returns (study1_changed, study2_changed).
+    """
+    raw_files = sorted(FILE3_RAW.glob("*_NLDC_PSP*"))
+    if not raw_files:
+        print("No raw files found in File3_Raw.")
+        return False, False
+
+    s1_any = False
+    s2_any = False
+    for raw_file in raw_files:
+        print(f"\nParsing {raw_file.name}...")
+        s1 = append_study1(raw_file)
+        s2 = append_study2(raw_file)
+        s1_any = s1_any or s1
+        s2_any = s2_any or s2
+
+    return s1_any, s2_any
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", help="Target data date (YYYY-MM-DD). Default: yesterday.")
+    parser.add_argument("--scan", action="store_true",
+                        help="Parse all unparsed files in File3_Raw (used for push-triggered runs).")
     args = parser.parse_args()
-
-    # NLDC files published on day N contain data for day N-1
-    # So "today's file" (named today) reports yesterday's data.
-    # We try: today's filename (data = yesterday) and yesterday's filename (data = day before).
-    if args.date:
-        target_data_date = date.fromisoformat(args.date)
-        # File named (target_data_date + 1) reports target_data_date
-        file_dates_to_try = [target_data_date + timedelta(1), target_data_date]
-    else:
-        today = date.today()
-        # Normal run: try today's file (yesterday's data), and yesterday's file (day before)
-        file_dates_to_try = [today, today - timedelta(1)]
 
     from download_psp_new import stem
 
@@ -216,26 +229,36 @@ def main():
     FILE2_RAW.mkdir(exist_ok=True)
     FILE3_RAW.mkdir(exist_ok=True)
 
-    raw_file = None
-    for file_date in file_dates_to_try:
-        print(f"Trying file date: {stem(file_date)}")
-        # Download into File3_Raw first
-        raw_file = download_today(file_date, FILE3_RAW)
-        if raw_file:
-            # Copy the same file into File2_Raw
-            file2_dest = FILE2_RAW / raw_file.name
-            if not file2_dest.exists():
-                shutil.copy2(raw_file, file2_dest)
-                print(f"  Copied to File2_Raw: {raw_file.name}")
-            break
+    # ── Scan mode: parse whatever is already in File3_Raw ────────────────────
+    if args.scan:
+        print("Scan mode: parsing all unparsed files in File3_Raw...")
+        s1_changed, s2_changed = scan_and_parse()
     else:
-        print("\nNo file available yet — will retry at next scheduled run.")
-        sys.exit(1)
+        # ── Download mode: fetch a specific or today's file ──────────────────
+        if args.date:
+            target_data_date = date.fromisoformat(args.date)
+            file_dates_to_try = [target_data_date + timedelta(1), target_data_date]
+        else:
+            today = date.today()
+            file_dates_to_try = [today, today - timedelta(1)]
 
-    # ── Parse and append to CSVs ─────────────────────────────────────────────
-    print(f"\nParsing {raw_file.name}...")
-    s1_changed = append_study1(raw_file)
-    s2_changed = append_study2(raw_file)
+        raw_file = None
+        for file_date in file_dates_to_try:
+            print(f"Trying file date: {stem(file_date)}")
+            raw_file = download_today(file_date, FILE3_RAW)
+            if raw_file:
+                file2_dest = FILE2_RAW / raw_file.name
+                if not file2_dest.exists():
+                    shutil.copy2(raw_file, file2_dest)
+                    print(f"  Copied to File2_Raw: {raw_file.name}")
+                break
+        else:
+            print("\nNo file available yet — will retry at next scheduled run.")
+            sys.exit(1)
+
+        print(f"\nParsing {raw_file.name}...")
+        s1_changed = append_study1(raw_file)
+        s2_changed = append_study2(raw_file)
 
     if not s1_changed and not s2_changed:
         print("\nNo new data added (already up to date).")

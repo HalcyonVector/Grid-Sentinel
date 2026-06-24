@@ -1,9 +1,10 @@
 name: Daily PSP Scrape
 
 on:
-  schedule:
-    - cron: '30 6 * * *'   # 12:00 PM IST (first attempt)
-    - cron: '30 14 * * *'  # 08:00 PM IST (second attempt / retry)
+  push:
+    paths:
+      - 'File2_Raw/**'
+      - 'File3_Raw/**'
   workflow_dispatch:        # manual trigger from GitHub Actions tab
     inputs:
       date:
@@ -46,6 +47,8 @@ jobs:
         run: |
           if [ -n "${{ github.event.inputs.date }}" ]; then
             python Scrapings/update_live.py --date "${{ github.event.inputs.date }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            python Scrapings/update_live.py --scan
           else
             python Scrapings/update_live.py
           fi
