@@ -34,6 +34,8 @@ REPO_ROOT    = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 STUDY1_CSV   = REPO_ROOT / "Dataset" / "study1_daily.csv"
 STUDY2_CSV   = REPO_ROOT / "Dataset" / "study2_scada.csv"
+FILE2_RAW    = REPO_ROOT / "File2_Raw"
+FILE3_RAW    = REPO_ROOT / "File3_Raw"
 
 sys.path.insert(0, str(SCRAPERS_DIR))
 
@@ -267,17 +269,25 @@ def main():
 
     print(f"\n=== Grid-Sentinel daily update — {date.today()} ===\n")
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_path = Path(tmp_dir)
+    FILE2_RAW.mkdir(exist_ok=True)
+    FILE3_RAW.mkdir(exist_ok=True)
 
-        for file_date in file_dates_to_try:
-            print(f"Trying file date: {stem(file_date)} (data for {file_date - timedelta(1) if not args.date else target_data_date})")
-            raw_file = download_today(file_date, tmp_path)
-            if raw_file:
-                break
-        else:
-            print("\nNo file available yet — will retry at next scheduled run.")
-            sys.exit(1)
+    raw_file = None
+    for file_date in file_dates_to_try:
+        print(f"Trying file date: {stem(file_date)}")
+        # Download into File3_Raw first
+        raw_file = download_today(file_date, FILE3_RAW)
+        if raw_file:
+            # Copy the same file into File2_Raw
+            import shutil
+            file2_dest = FILE2_RAW / raw_file.name
+            if not file2_dest.exists():
+                shutil.copy2(raw_file, file2_dest)
+                print(f"  Copied to File2_Raw: {raw_file.name}")
+            break
+    else:
+        print("\nNo file available yet — will retry at next scheduled run.")
+        sys.exit(1)
 
         print(f"\nParsing {raw_file.name}...")
         s1_changed = append_study1(raw_file)
