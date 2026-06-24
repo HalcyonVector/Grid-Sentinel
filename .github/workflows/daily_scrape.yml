@@ -1,0 +1,99 @@
+name: Daily PSP Scrape
+
+on:
+  schedule:
+    - cron: '30 6 * * *'   # 12:00 PM IST (first attempt)
+    - cron: '30 14 * * *'  # 08:00 PM IST (second attempt / retry)
+  workflow_dispatch:        # manual trigger from GitHub Actions tab
+    inputs:
+      date:
+        description: 'Override data date (YYYY-MM-DD). Leave blank for auto (yesterday).'
+        required: false
+        default: ''
+
+permissions:
+  contents: write   # needed to commit updated CSVs back to repo
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 2. Python ──────────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # ── 3. Dependencies ────────────────────────────────────────────────────
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pandas openpyxl pdfplumber requests urllib3 xlrd playwright "kaggle>=1.8.0"
+
+      - name: Install Playwright browser
+        run: playwright install chromium --with-deps
+
+      # ── 4. Run scraper ─────────────────────────────────────────────────────
+      - name: Run daily update
+        id: scrape
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            python Scrapings/update_live.py --date "${{ github.event.inputs.date }}"
+          else
+            python Scrapings/update_live.py
+          fi
+        # Exit 1 = not published yet (not a failure, just retry later)
+        continue-on-error: true
+
+      - name: Check scrape outcome
+        id: outcome
+        run: |
+          if [ "${{ steps.scrape.outcome }}" = "failure" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Scrape exited with error — file not available yet or parse failed."
+          else
+            # Check if CSVs actually changed
+            git diff --quiet Dataset/study1_daily.csv Dataset/study2_scada.csv \
+              && echo "changed=false" >> $GITHUB_OUTPUT \
+              || echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      # ── 5. Commit updated CSVs ─────────────────────────────────────────────
+      - name: Commit and push updated CSVs
+        if: steps.outcome.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Dataset/study1_daily.csv Dataset/study2_scada.csv
+          git commit -m "chore: daily PSP update $(date -u +%Y-%m-%d)"
+          git push
+
+      # ── 6. Push updated datasets to Kaggle ────────────────────────────────
+      - name: Push to Kaggle
+        if: steps.outcome.outputs.changed == 'true'
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          kaggle datasets version \
+            -p Dataset/ \
+            -m "Daily PSP update $(date -u +%Y-%m-%d)" \
+            --dir-mode zip \
+            -d ${{ secrets.KAGGLE_DATASET }}
+
+      # ── 7. Summary ─────────────────────────────────────────────────────────
+      - name: Summary
+        if: always()
+        run: |
+          if [ "${{ steps.outcome.outputs.changed }}" = "true" ]; then
+            echo "✅ CSVs updated and pushed to GitHub + Kaggle."
+          else
+            echo "ℹ️  No new data available yet — will retry at next scheduled run."
+          fi
