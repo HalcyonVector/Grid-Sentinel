@@ -94,10 +94,13 @@ def find_url_without_browser(target_date: date) -> str | None:
     return None
 
 
-def scrape_cdn_index() -> dict[str, str]:
+def scrape_cdn_index(fy_years: list[str] | None = None) -> dict[str, str]:
     """
     Use Playwright to render the listing page for each financial year,
     clicking through all pages. Returns { "28.05.25" -> full_url }.
+
+    fy_years: limit scraping to these FY labels (e.g. ["2026-27"]).
+              If None, scrapes all available years (slow — for bulk downloads).
     Returns empty dict if Playwright is unavailable or the site is unreachable.
     """
     try:
@@ -143,6 +146,9 @@ def scrape_cdn_index() -> dict[str, str]:
 
         if not fy_options:
             fy_options = ["2026-27", "2025-26", "2024-25"]
+
+        if fy_years:
+            fy_options = [fy for fy in fy_options if fy in fy_years]
 
         print(f"  Financial years to scrape: {fy_options}")
 
@@ -220,12 +226,12 @@ def fetch_bytes(url: str) -> bytes | None:
 
 # ── main loop ─────────────────────────────────────────────────────────────────
 
-def download_range(start: date, end: date, out_dir: Path, delay: float = 1.0):
+def download_range(start: date, end: date, out_dir: Path, delay: float = 1.0, fy_years: list[str] | None = None):
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cdn_index = {}
     if end >= NEW_CDN_START:
-        cdn_index = scrape_cdn_index()
+        cdn_index = scrape_cdn_index(fy_years=fy_years)
 
     d = start
     ok, failed = 0, []
