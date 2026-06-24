@@ -127,9 +127,21 @@ def append_study2(raw_file: Path) -> bool:
     with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
         tmp_csv = Path(tmp.name)
 
-    build_timeseries_long(str(raw_file), str(tmp_csv))
-    new_rows = pd.read_csv(tmp_csv)
-    tmp_csv.unlink(missing_ok=True)
+    try:
+        build_timeseries_long(str(raw_file), str(tmp_csv))
+    except Exception as e:
+        print(f"  study2_scada: parser error for {raw_file.name} — {e}")
+        tmp_csv.unlink(missing_ok=True)
+        return False
+
+    try:
+        new_rows = pd.read_csv(tmp_csv)
+    except (pd.errors.EmptyDataError, Exception) as e:
+        print(f"  study2_scada: no TimeSeries data in {raw_file.name} — {e}")
+        tmp_csv.unlink(missing_ok=True)
+        return False
+    finally:
+        tmp_csv.unlink(missing_ok=True)
 
     if new_rows.empty:
         print(f"  study2_scada: no TimeSeries sheet in {raw_file.name} — skipping.")
@@ -192,17 +204,30 @@ def validate(study1_changed: bool, study2_changed: bool):
     return True
 
 
-def scan_and_parse() -> tuple[bool, bool]:
+def _parse_file_date(path: Path) -> date | None:
+    """Extract date from filename like 19.06.25_NLDC_PSP.xls → date(2025, 6, 19)."""
+    try:
+        parts = path.name.split("_")[0].split(".")
+        return date(2000 + int(parts[2]), int(parts[1]), int(parts[0]))
+    except Exception:
+        return None
+
+
+def scan_and_parse(lookback_days: int = 10) -> tuple[bool, bool]:
     """
-    Parse all raw files in FILE3_RAW not yet reflected in the CSVs.
-    Used when triggered by a push (we don't know which date was pushed).
+    Parse recent raw files in FILE3_RAW not yet reflected in the CSVs.
+    Only considers files dated within the last `lookback_days` days.
     Returns (study1_changed, study2_changed).
     """
-    raw_files = sorted(FILE3_RAW.glob("*_NLDC_PSP*"))
+    cutoff = date.today() - timedelta(days=lookback_days)
+    all_files = sorted(FILE3_RAW.glob("*_NLDC_PSP*"))
+    raw_files = [f for f in all_files if (d := _parse_file_date(f)) and d >= cutoff]
+
     if not raw_files:
-        print("No raw files found in File3_Raw.")
+        print(f"No raw files found in File3_Raw within the last {lookback_days} days.")
         return False, False
 
+    print(f"Scanning {len(raw_files)} file(s) from {cutoff} onward (of {len(all_files)} total).")
     s1_any = False
     s2_any = False
     for raw_file in raw_files:
