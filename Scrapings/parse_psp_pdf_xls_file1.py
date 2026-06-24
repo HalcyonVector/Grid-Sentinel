@@ -88,8 +88,8 @@ def _pdf_extract_date(pdf):
     This directly names the date the data covers, unlike 'Date of Reporting'
     which is the next day (when the report was published).
 
-    Falls back to a bare DD-Mon-YY(YY) token on pages 0/1 only if the
-    subject line is absent (older PDF layouts).
+    Falls back to 'Date of Reporting' minus one day only if the subject
+    line is absent (the report's data always covers the previous day).
     """
     # ── 1. Subject line: "for the date DD.MM.YYYY" ──────────────────────────
     sub_re = re.compile(
@@ -104,14 +104,21 @@ def _pdf_extract_date(pdf):
             if d:
                 return d
 
-    # ── 2. Bare DD-Mon-YY(YY) token heuristic (older layouts, last resort) ──
+    # ── 2. Fallback (older PDFs without a subject line): 'Date of Reporting'
+    #       is the publication date; the data covers the PREVIOUS day (-1).
+    #       Space-stripped so it also works on concatenated-text PDFs. ───────
+    from datetime import timedelta
+    dor_re = re.compile(
+        r"dateofreporting[:\s]*([0-9]{1,2}[-./][a-z0-9]{2,4}[-./][0-9]{2,4})",
+        re.IGNORECASE,
+    )
     for page in pdf.pages[:2]:
-        text = page.extract_text() or ""
-        m = re.search(r"\b(\d{1,2}-\w{3}-\d{2,4})\b", text)
+        text = (page.extract_text() or "").replace(" ", "").lower()
+        m = dor_re.search(text)
         if m:
             d = _parse_date_str(m.group(1))
             if d:
-                return d
+                return d - timedelta(days=1)
 
     return None
 
@@ -135,7 +142,9 @@ def _pdf_regional_summary(tables):
     for row in target[1:]:
         if not row or row[0] is None:
             continue
-        label = str(row[0]).strip().lower()
+        # Space-stripped so matching also works on the concatenated-text PDFs
+        # (some 2019-2021 reports render without spaces between words).
+        label = str(row[0]).strip().lower().replace(" ", "")
         if not label:
             continue
 
@@ -143,29 +152,29 @@ def _pdf_regional_summary(tables):
             i = col_idx.get(r)
             return _to_float(row[i]) if i is not None and i < len(row) else None
 
-        if "evening peak" in label or "(at 1900" in label or "(at 19:00" in label:
+        if "eveningpeak" in label or "(at1900" in label or "(at19:00" in label:
             for r in col_idx:
                 result[f"evening_peak_demand_{r.lower()}_mw"] = get(r)
-        elif "peak shortage" in label:
+        elif "peakshortage" in label:
             for r in col_idx:
                 result[f"peak_shortage_{r.lower()}_mw"] = get(r)
-        elif "energy met" in label and "shortage" not in label:
+        elif "energymet" in label and "shortage" not in label:
             for r in col_idx:
                 result[f"energy_met_{r.lower()}_mu"] = get(r)
-        elif "hydro gen" in label:
+        elif "hydrogen" in label:
             for r in col_idx:
                 result[f"hydro_gen_{r.lower()}_mu"] = get(r)
-        elif "wind gen" in label:
+        elif "windgen" in label:
             for r in col_idx:
                 result[f"wind_gen_{r.lower()}_mu"] = get(r)
-        elif "solar gen" in label:
+        elif "solargen" in label:
             for r in col_idx:
                 result[f"solar_gen_{r.lower()}_mu"] = get(r)
-        elif "energy shortage" in label:
+        elif "energyshortage" in label:
             for r in col_idx:
                 result[f"energy_shortage_{r.lower()}_mu"] = get(r)
-        elif ("maximum demand met" in label or "demand met during" in label) and \
-                "time" not in label and "hour" not in label:
+        elif ("maximumdemandmet" in label or "demandmetduring" in label) and \
+                not label.startswith("time") and "hour" not in label:
             for r in col_idx:
                 result[f"max_demand_met_{r.lower()}_mw"] = get(r)
 
@@ -185,7 +194,7 @@ def _pdf_frequency(tables):
         if header_idx is None:
             continue
         for row in t[header_idx + 1:]:
-            if "all india" in str(row[0] or "").strip().lower():
+            if "allindia" in str(row[0] or "").strip().lower().replace(" ", ""):
                 result["freq_fvi"]            = _to_float(row[1]) if len(row) > 1 else None
                 result["freq_pct_below_497"]  = _to_float(row[2]) if len(row) > 2 else None
                 result["freq_pct_497_498"]    = _to_float(row[3]) if len(row) > 3 else None
@@ -211,7 +220,7 @@ def _pdf_generation(tables):
             continue
         headers = [str(c or "").strip().lower() for c in t[0]]
         ai_col = next((i for i, h in enumerate(headers)
-                       if "all india" in h or "all\nindia" in h), None)
+                       if "all india" in h or "all\nindia" in h or "allindia" in h.replace(" ", "")), None)
         if ai_col is None:
             continue
         row_labels = [str(r[0] or "").lower() for r in t[1:]]
@@ -231,11 +240,11 @@ def _pdf_generation(tables):
         if not t:
             continue
         for row in t:
-            label = str(row[0] or "").strip().lower()
+            label = str(row[0] or "").strip().lower().replace(" ", "")
             val = _to_float(row[-1]) if row else None
-            if "share of res" in label:
+            if "shareofres" in label:
                 result["share_res_pct"] = val
-            elif "share of non" in label:
+            elif "shareofnon" in label:
                 result["share_nonfossil_pct"] = val
     return result
 
@@ -249,9 +258,9 @@ def _pdf_outage(tables):
     for t in tables:
         if not t:
             continue
-        row_labels = [str(r[0] or "").strip().lower() for r in t]
-        has_central = any(l.startswith("central sector") for l in row_labels)
-        has_state   = any(l.startswith("state sector")   for l in row_labels)
+        row_labels = [str(r[0] or "").strip().lower().replace(" ", "") for r in t]
+        has_central = any(l.startswith("centralsector") for l in row_labels)
+        has_state   = any(l.startswith("statesector")   for l in row_labels)
         if not (has_central and has_state):
             continue
 
@@ -263,10 +272,10 @@ def _pdf_outage(tables):
                 reg_cols[r] = headers.index(r)
 
         for row in t:
-            label = str(row[0] or "").strip().lower()
-            if label.startswith("central sector"):
+            label = str(row[0] or "").strip().lower().replace(" ", "")
+            if label.startswith("centralsector"):
                 prefix = "outage_central"
-            elif label.startswith("state sector"):
+            elif label.startswith("statesector"):
                 prefix = "outage_state"
             elif label == "total":
                 prefix = "outage_total"
@@ -343,7 +352,7 @@ def _pdf_diversity(tables):
         if not t:
             continue
         for row in t:
-            label = str(row[0] or "").strip().lower()
+            label = str(row[0] or "").strip().lower().replace(" ", "")
             # Diversity factors are often in a single-column-ish table
             # Look for the numeric value in col 1 or the last non-None cell
             vals = [_to_float(c) for c in row if _to_float(c) is not None]
@@ -352,10 +361,14 @@ def _pdf_diversity(tables):
             val = vals[0]
             if "regional" in label and "diversity" not in label and val is None:
                 continue
-            if "based on regional" in label:
+            if "basedonregional" in label:
                 result["diversity_regional"] = val
-            elif "based on state" in label:
+            elif "basedonstate" in label:
                 result["diversity_state"] = val
+            elif "allindiademanddiversityfactor" in label and val is not None:
+                # Older format (pre-2020) has a single combined factor only;
+                # per the report's own formula it is the regional-based one.
+                result.setdefault("diversity_regional", val)
         if result:
             break
     return result
@@ -373,13 +386,26 @@ def parse_pdf(filepath):
         tables = pdf.pages[1].extract_tables() if len(pdf.pages) > 1 else []
 
         row = {"date": date}
-        row.update(_pdf_regional_summary(tables))
-        row.update(_pdf_frequency(tables))
-        row.update(_pdf_generation(tables))
-        row.update(_pdf_outage(tables))
-        row.update(_pdf_regional_ie(tables))
-        row.update(_pdf_transnational(tables))
-        row.update(_pdf_diversity(tables))
+        _section_parsers = (_pdf_regional_summary, _pdf_frequency, _pdf_generation,
+                            _pdf_outage, _pdf_regional_ie, _pdf_transnational,
+                            _pdf_diversity)
+        for _fn in _section_parsers:
+            row.update(_fn(tables))
+
+        # Fallback: PDF layouts vary -- a given section (A, frequency,
+        # generation, outage, diversity ...) may sit on a page other than
+        # page[1], or render without spaces. If ANY major block came back
+        # empty, re-scan ALL pages and fill only the still-missing keys.
+        # This pass never overwrites a value already parsed from page[1].
+        if any(row.get(k) is None for k in (
+                "evening_peak_demand_total_mw", "max_demand_met_total_mw",
+                "freq_fvi", "gen_coal_mu", "diversity_regional",
+                "outage_total_total_mw")):
+            all_tables = [t for pg in pdf.pages for t in (pg.extract_tables() or [])]
+            for _fn in _section_parsers:
+                for _k, _v in _fn(all_tables).items():
+                    if row.get(_k) is None:
+                        row[_k] = _v
 
     return row
 
@@ -500,7 +526,7 @@ def _xls_parse_mop_e(df):
                 for r in list(col_map):
                     result[f"energy_shortage_{r.lower()}_mu"] = gr(r)
             elif ("maximum demand met" in lbl or "demand met during" in lbl) and \
-                    "time" not in lbl and "hour" not in lbl:
+                    not lbl.lstrip().startswith("time") and "hour" not in lbl:
                 for r in list(col_map):
                     result[f"max_demand_met_{r.lower()}_mw"] = gr(r)
 
@@ -655,6 +681,11 @@ def _xls_parse_mop_e(df):
         elif "based on state" in lbl:
             val = next((_to_float(v) for v in row.iloc[1:] if _to_float(v) is not None), None)
             result["diversity_state"] = val
+        elif "all india demand diversity factor" in lbl:
+            # Older single-factor layout: map combined value to regional.
+            val = next((_to_float(v) for v in row.iloc[1:] if _to_float(v) is not None), None)
+            if val is not None:
+                result.setdefault("diversity_regional", val)
 
     # ── Section I (2024+): solar / non-solar peak ────────────────────────────
     # Structure: row with "Solar hr" in col 4, max-demand in col 5, shortage in col 8
@@ -697,12 +728,44 @@ def _xls_parse_crossborder(df):
         elif "net from india" in lbl:
             sections["net"] = i
 
+    # Bound each section's scan window so it stops before the NEXT section
+    # starts. Without this, a country row from a later section (e.g. Import)
+    # gets picked up while still scanning the earlier section (e.g. Export),
+    # silently overwriting the correct value.
+    starts_sorted = sorted(sections.values())
+    section_end = {}
+    for name, start in sections.items():
+        later_starts = [s for s in starts_sorted if s > start]
+        section_end[name] = min(later_starts) if later_starts else len(df)
+
     for section_name, section_start in sections.items():
-        for i in range(section_start, min(section_start + 20, len(df))):
+        end = section_end[section_name]
+        for i in range(section_start, end):
             row_label = str(df.iloc[i, 0]).strip().lower() if not pd.isna(df.iloc[i, 0]) else ""
             for country_key, country_name in country_map.items():
                 if row_label == country_key:
                     result[f"xb_{section_name}_{country_name}_mu"] = _to_float(df.iloc[i, total_col])
+    return result
+
+
+def _xls_parse_ir_line(df):
+    """
+    Parse the IR-Line sheet — inter-regional exchange aggregated to region pairs.
+
+    Reads the pre-summed subtotal rows the sheet provides (cols: 0=pair label,
+    6=import MU, 7=export MU, 9=net MU). Present from FY2023 onwards.
+    Emits ir_<pair>_import_mu / _export_mu / _net_mu  (e.g. ir_er_nr_import_mu).
+    """
+    PAIR_LABELS = {"ER-NR", "ER-WR", "ER-SR", "ER-NER", "NER-NR", "WR-NR", "WR-SR"}
+    result = {}
+    for _, row in df.iterrows():
+        label = str(row.iloc[0]).strip()
+        if label not in PAIR_LABELS:
+            continue
+        key = label.replace("-", "_").lower()
+        result[f"ir_{key}_import_mu"] = _to_float(row.iloc[6]) if len(row) > 6 else None
+        result[f"ir_{key}_export_mu"] = _to_float(row.iloc[7]) if len(row) > 7 else None
+        result[f"ir_{key}_net_mu"]    = _to_float(row.iloc[9]) if len(row) > 9 else None
     return result
 
 
@@ -730,6 +793,11 @@ def parse_xls(filepath):
     if "CrossBorder" in sheets:
         df_cb = _xls_read_sheet(filepath, "CrossBorder")
         row.update(_xls_parse_crossborder(df_cb))
+
+    # IR-Line sheet (inter-regional corridor flows; FY2023+, optional)
+    if "IR-Line" in sheets:
+        df_ir = _xls_read_sheet(filepath, "IR-Line")
+        row.update(_xls_parse_ir_line(df_ir))
 
     return row
 
@@ -787,7 +855,17 @@ def build_dataset(input_path, output_csv):
         pd.DataFrame().to_csv(output_csv, index=False)
         return pd.DataFrame()
 
-    df = pd.DataFrame(rows).sort_values("date").reset_index(drop=True)
+    df = pd.DataFrame(rows)
+    # Dedup: a date may appear twice (PDF + XLS for the same day, or era
+    # overlap). Keep the richest row (most non-null fields).
+    if "date" in df.columns and df["date"].duplicated().any():
+        n_dup = int(df["date"].duplicated().sum())
+        df["_nonnull"] = df.notna().sum(axis=1)
+        df = (df.sort_values(["date", "_nonnull"])
+                .drop_duplicates("date", keep="last")
+                .drop(columns="_nonnull"))
+        print(f"Deduplicated {n_dup} duplicate-date row(s).")
+    df = df.sort_values("date").reset_index(drop=True)
     df.to_csv(output_csv, index=False)
     print(f"\nSaved {len(df)} rows → {output_csv}")
     print(f"Columns ({len(df.columns)}): {df.columns.tolist()}")
