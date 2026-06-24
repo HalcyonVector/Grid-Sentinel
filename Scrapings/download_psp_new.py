@@ -51,21 +51,65 @@ def extract_links(html, index):
     return new_this
 
 
+def find_url_without_browser(target_date: date) -> str | None:
+    """
+    Try to find the CDN URL for target_date using only requests (no browser).
+    Tries S3-compatible directory listing on webcdn.grid-india.in.
+    Returns the full URL or None.
+    """
+    import xml.etree.ElementTree as ET
+
+    s    = stem(target_date)
+    year = target_date.strftime("%Y")
+    mon  = target_date.strftime("%m")
+    base = "https://webcdn.grid-india.in"
+    prefix = f"files/grdw/{year}/{mon}/{s}_NLDC_PSP"
+
+    for list_url in [
+        f"{base}/?list-type=2&prefix={prefix}",
+        f"{base}/?prefix={prefix}",
+    ]:
+        try:
+            r = requests.get(list_url, headers=HEADERS, timeout=15, verify=False)
+            if r.status_code == 200:
+                # Try XML S3 response
+                try:
+                    root = ET.fromstring(r.content)
+                    for elem in root.iter():
+                        tag = elem.tag.split("}")[-1]  # strip namespace
+                        if tag == "Key" and elem.text and s in elem.text and "_NLDC_PSP" in elem.text:
+                            return f"{base}/{elem.text}"
+                except ET.ParseError:
+                    pass
+                # Fallback: regex on raw text
+                m = re.search(
+                    rf'(files/grdw/{year}/{mon}/{re.escape(s)}_NLDC_PSP_\d+\.(xls|pdf))',
+                    r.text
+                )
+                if m:
+                    return f"{base}/{m.group(1)}"
+        except requests.RequestException:
+            pass
+
+    return None
+
+
 def scrape_cdn_index() -> dict[str, str]:
     """
     Use Playwright to render the listing page for each financial year,
     clicking through all pages. Returns { "28.05.25" -> full_url }.
+    Returns empty dict if Playwright is unavailable or the site is unreachable.
     """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        print("ERROR: Playwright not installed.")
-        print("Run:  pip install playwright && py -m playwright install chromium")
-        sys.exit(1)
+        print("WARNING: Playwright not installed — CDN listing scrape unavailable.")
+        return {}
 
     index = {}
 
-    with sync_playwright() as p:
+    try:
+      with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
         pg = browser.new_page()
 
@@ -153,6 +197,10 @@ def scrape_cdn_index() -> dict[str, str]:
                     break
 
         browser.close()
+
+    except Exception as e:
+        print(f"WARNING: Playwright scrape failed ({type(e).__name__}: {e}) — returning empty index.")
+        return {}
 
     print(f"\nScraped {len(index)} unique dates total.\n")
     return index

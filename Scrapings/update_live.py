@@ -38,21 +38,56 @@ sys.path.insert(0, str(SCRAPERS_DIR))
 def download_today(target_date: date, out_dir: Path) -> Path | None:
     """
     Download the PSP file for target_date into out_dir.
-    Delegates to download_psp_new.download_range (full CDN index scrape).
+    Tries in order:
+      1. Old CDN direct URL (report.grid-india.in) — no browser needed
+      2. CDN S3 listing (webcdn.grid-india.in) — no browser needed
+      3. Playwright listing scrape — fallback for local runs
     Returns the local file path on success, None if not found.
     """
-    from download_psp_new import download_range, stem
+    from download_psp_new import (
+        stem, fetch_bytes, old_url, find_url_without_browser,
+        download_range, NEW_CDN_START,
+    )
+
+    s = stem(target_date)
 
     # Return early if already downloaded
-    existing = list(out_dir.glob(f"{stem(target_date)}_NLDC_PSP*"))
+    existing = list(out_dir.glob(f"{s}_NLDC_PSP*"))
     if existing:
         print(f"  Already present: {existing[0].name}")
         return existing[0]
 
-    download_range(target_date, target_date, out_dir, delay=0)
+    # ── 1. Old CDN (requests only, always fast) ───────────────────────────────
+    for ext in ("xls", "pdf"):
+        url = old_url(target_date, ext)
+        content = fetch_bytes(url)
+        if content:
+            dest = out_dir / f"{s}_NLDC_PSP.{ext}"
+            dest.write_bytes(content)
+            print(f"  Downloaded via old CDN: {dest.name} ({len(content):,} bytes)")
+            return dest
 
-    result = list(out_dir.glob(f"{stem(target_date)}_NLDC_PSP*"))
-    return result[0] if result else None
+    # ── 2. New CDN: browser-free S3 listing ──────────────────────────────────
+    if target_date >= NEW_CDN_START:
+        url = find_url_without_browser(target_date)
+        if url:
+            ext = url.rsplit(".", 1)[-1]
+            content = fetch_bytes(url)
+            if content:
+                dest = out_dir / f"{s}_NLDC_PSP.{ext}"
+                dest.write_bytes(content)
+                print(f"  Downloaded via CDN listing: {dest.name} ({len(content):,} bytes)")
+                return dest
+
+        # ── 3. Playwright fallback (works locally, may fail in CI) ────────────
+        print("  Trying Playwright listing scrape (may fail in CI)...")
+        download_range(target_date, target_date, out_dir, delay=0)
+        result = list(out_dir.glob(f"{s}_NLDC_PSP*"))
+        if result:
+            return result[0]
+
+    print(f"  {s}: not found on any CDN.")
+    return None
 
 
 def append_study1(raw_file: Path) -> bool:
