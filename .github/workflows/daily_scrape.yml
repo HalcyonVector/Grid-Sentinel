@@ -83,7 +83,8 @@ jobs:
       - name: Push to Kaggle
         if: steps.outcome.outputs.changed == 'true'
         env:
-          KAGGLE_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
           kaggle datasets version \
             -p Dataset/ \
