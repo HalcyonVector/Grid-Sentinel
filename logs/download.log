@@ -1,0 +1,99 @@
+[main 86eaa3c] chore: add raw PSP file(s) 24.06.26_NLDC_PSP.xls
+ 3 files changed, 1 insertion(+), 1 deletion(-)
+ create mode 100644 File2_Raw/24.06.26_NLDC_PSP.xls
+ create mode 100644 File3_Raw/24.06.26_NLDC_PSP.xls
+To https://github.com/HalcyonVector/Grid-Sentinel.git
+   13e47c7..86eaa3c  main -> main
+
+Downloading 25.06.26 (FY 2026-27 only)...
+Loading listing page (may take 15-20 seconds)...
+  Set page size to 100.
+  Financial years to scrape: ['2026-27']
+
+  === Financial year: 2026-27 ===
+    page 1: 74 new links (total 50)
+    page 2: 50 new links (total 85)
+
+Scraped 85 unique dates total.
+
+FAIL 2026-06-25  — not in listing (holiday/missing)
+
+Done. 0 downloaded, 1 failed.
+Failed dates: ['2026-06-25'] 
+
+Downloading 24.06.26 (FY 2026-27 only)...
+Loading listing page (may take 15-20 seconds)...
+  Set page size to 100.
+  Financial years to scrape: ['2026-27']
+
+  === Financial year: 2026-27 ===
+    page 1: 74 new links (total 50)
+    page 2: 50 new links (total 85)
+
+Scraped 85 unique dates total.
+
+OK   2026-06-24  [xls]  (289,280 bytes)
+
+Done. 1 downloaded, 0 failed.
+Copied to File2_Raw: 24.06.26_NLDC_PSP.xls
+
+Pushed to GitHub — Actions will parse and update CSVs shortly.
+
+Downloading 25.06.26 (FY 2026-27 only)...
+Loading listing page (may take 15-20 seconds)...
+  Set page size to 100.
+  Financial years to scrape: ['2026-27']
+
+  === Financial year: 2026-27 ===
+    page 1: 74 new links (total 50)
+    page 2: 50 new links (total 85)
+
+Scraped 85 unique dates total.
+
+FAIL 2026-06-25  — not in listing (holiday/missing)
+
+Done. 0 downloaded, 1 failed.
+Failed dates: ['2026-06-25'] 
+Already have 24.06.26_NLDC_PSP.xls — skipping.
+
+No new files downloaded — nothing to push.
+[main 7cefbab] chore: add raw PSP file(s) 25.06.26_NLDC_PSP.xls
+ 3 files changed, 1 insertion(+), 1 deletion(-)
+ create mode 100644 File2_Raw/25.06.26_NLDC_PSP.xls
+ create mode 100644 File3_Raw/25.06.26_NLDC_PSP.xls
+To https://github.com/HalcyonVector/Grid-Sentinel.git
+   4139888..7cefbab  main -> main
+
+Downloading 26.06.26 (FY 2026-27 only)...
+Loading listing page (may take 15-20 seconds)...
+  Set page size to 100.
+  Financial years to scrape: ['2026-27']
+
+  === Financial year: 2026-27 ===
+    page 1: 74 new links (total 50)
+    page 2: 51 new links (total 86)
+
+Scraped 86 unique dates total.
+
+FAIL 2026-06-26  — not in listing (holiday/missing)
+
+Done. 0 downloaded, 1 failed.
+Failed dates: ['2026-06-26'] 
+
+Downloading 25.06.26 (FY 2026-27 only)...
+Loading listing page (may take 15-20 seconds)...
+  Set page size to 100.
+  Financial years to scrape: ['2026-27']
+
+  === Financial year: 2026-27 ===
+    page 1: 74 new links (total 50)
+    page 2: 51 new links (total 86)
+
+Scraped 86 unique dates total.
+
+OK   2026-06-25  [xls]  (289,280 bytes)
+
+Done. 1 downloaded, 0 failed.
+Copied to File2_Raw: 25.06.26_NLDC_PSP.xls
+
+Pushed to GitHub — Actions will parse and update CSVs shortly.
