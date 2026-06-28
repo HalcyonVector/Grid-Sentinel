@@ -32,11 +32,13 @@ def main():
     parser.add_argument("--date", help="File date to download (YYYY-MM-DD). Default: today and yesterday.")
     args = parser.parse_args()
 
+    LOOKBACK_DAYS = 5  # check up to this many days back for missed downloads
+
     if args.date:
         file_dates = [date.fromisoformat(args.date)]
     else:
         today = date.today()
-        file_dates = [today, today - timedelta(1)]
+        file_dates = [today - timedelta(i) for i in range(LOOKBACK_DAYS)]
 
     FILE2_RAW.mkdir(exist_ok=True)
     FILE3_RAW.mkdir(exist_ok=True)
@@ -46,11 +48,11 @@ def main():
     for file_date in file_dates:
         s = stem(file_date)
 
-        # Already downloaded
+        # Already downloaded — skip this day but keep checking older ones
         existing = list(FILE3_RAW.glob(f"{s}_NLDC_PSP*"))
         if existing:
             print(f"Already have {existing[0].name} — skipping.")
-            break
+            continue
 
         # Only scrape the FY that contains this date — much faster
         year = file_date.year if file_date.month >= 4 else file_date.year - 1
@@ -66,7 +68,6 @@ def main():
                 shutil.copy2(raw_file, dest2)
                 print(f"Copied to File2_Raw: {raw_file.name}")
             new_files.append(raw_file.name)
-            break
 
     if not new_files:
         print("\nNo new files downloaded — nothing to push.")

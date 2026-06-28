@@ -97,3 +97,43 @@ Done. 1 downloaded, 0 failed.
 Copied to File2_Raw: 25.06.26_NLDC_PSP.xls
 
 Pushed to GitHub — Actions will parse and update CSVs shortly.
+[main b19e5d6] chore: add raw PSP file(s) 26.06.26_NLDC_PSP.xls
+ 3 files changed, 1 insertion(+), 1 deletion(-)
+ create mode 100644 File2_Raw/26.06.26_NLDC_PSP.xls
+ create mode 100644 File3_Raw/26.06.26_NLDC_PSP.xls
+To https://github.com/HalcyonVector/Grid-Sentinel.git
+   04e6081..b19e5d6  main -> main
+
+Downloading 27.06.26 (FY 2026-27 only)...
+Loading listing page (may take 15-20 seconds)...
+  Set page size to 100.
+  Financial years to scrape: ['2026-27']
+
+  === Financial year: 2026-27 ===
+    page 1: 75 new links (total 50)
+    page 2: 52 new links (total 87)
+
+Scraped 87 unique dates total.
+
+FAIL 2026-06-27  — not in listing (holiday/missing)
+
+Done. 0 downloaded, 1 failed.
+Failed dates: ['2026-06-27'] 
+
+Downloading 26.06.26 (FY 2026-27 only)...
+Loading listing page (may take 15-20 seconds)...
+  Set page size to 100.
+  Financial years to scrape: ['2026-27']
+
+  === Financial year: 2026-27 ===
+    page 1: 75 new links (total 50)
+    page 2: 52 new links (total 87)
+
+Scraped 87 unique dates total.
+
+OK   2026-06-26  [xls]  (289,280 bytes)
+
+Done. 1 downloaded, 0 failed.
+Copied to File2_Raw: 26.06.26_NLDC_PSP.xls
+
+Pushed to GitHub — Actions will parse and update CSVs shortly.
