@@ -8,6 +8,7 @@ Usage:
 """
 
 import argparse
+import logging
 import shutil
 import subprocess
 import sys
@@ -19,8 +20,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from download_psp_new import download_range, stem, scrape_cdn_index, fetch_bytes, NEW_CDN_START
 
-FILE2_RAW = REPO_ROOT / "File2_Raw"
-FILE3_RAW = REPO_ROOT / "File3_Raw"
+FILE2_RAW = REPO_ROOT / "Dataset" / "Raw" / "File2_Raw"
+FILE3_RAW = REPO_ROOT / "Dataset" / "Raw" / "File3_Raw"
+LOG_FILE  = REPO_ROOT / "logs" / "download.log"
+
+
+def setup_logging():
+    # Only StreamHandler here. run_download.bat redirects stdout >> logs\download.log,
+    # which captures both these log lines and the print() calls from download_psp_new.py.
+    # A FileHandler would duplicate every line when run via the bat file.
+    LOG_FILE.parent.mkdir(exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s  %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
 
 
 def git(*args):
@@ -28,6 +43,8 @@ def git(*args):
 
 
 def main():
+    setup_logging()
+    log = logging.getLogger(__name__)
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", help="File date to download (YYYY-MM-DD). Default: today and yesterday.")
     args = parser.parse_args()
@@ -51,13 +68,13 @@ def main():
         # Already downloaded — skip this day but keep checking older ones
         existing = list(FILE3_RAW.glob(f"{s}_NLDC_PSP*"))
         if existing:
-            print(f"Already have {existing[0].name} — skipping.")
+            log.info(f"Already have {existing[0].name} — skipping.")
             continue
 
         # Only scrape the FY that contains this date — much faster
         year = file_date.year if file_date.month >= 4 else file_date.year - 1
         fy = f"{year}-{str(year + 1)[-2:]}"
-        print(f"\nDownloading {s} (FY {fy} only)...")
+        log.info(f"Downloading {s} (FY {fy} only)...")
         download_range(file_date, file_date, FILE3_RAW, fy_years=[fy])
 
         result = list(FILE3_RAW.glob(f"{s}_NLDC_PSP*"))
@@ -66,27 +83,27 @@ def main():
             dest2 = FILE2_RAW / raw_file.name
             if not dest2.exists():
                 shutil.copy2(raw_file, dest2)
-                print(f"Copied to File2_Raw: {raw_file.name}")
+                log.info(f"Copied to Dataset/Raw/File2_Raw: {raw_file.name}")
             new_files.append(raw_file.name)
 
     if not new_files:
-        print("\nNo new files downloaded — nothing to push.")
+        log.info("No new files downloaded — nothing to push.")
         return
 
     # Commit and push so GitHub Actions picks it up for parsing
-    git("add", "File2_Raw/", "File3_Raw/")
+    git("add", "Dataset/Raw/File2_Raw/", "Dataset/Raw/File3_Raw/")
     status = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "status", "--porcelain"],
         capture_output=True, text=True
     ).stdout.strip()
 
     if not status:
-        print("Nothing new to commit.")
+        log.info("Nothing new to commit.")
         return
 
     git("commit", "-m", f"chore: add raw PSP file(s) {', '.join(new_files)}")
     git("push")
-    print("\nPushed to GitHub — Actions will parse and update CSVs shortly.")
+    log.info("Pushed to GitHub — Actions will parse and update CSVs shortly.")
 
 
 if __name__ == "__main__":

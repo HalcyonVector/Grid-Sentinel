@@ -2,18 +2,35 @@
 build_all.py — Single-command rebuild for all Grid-Sentinel datasets.
 
 Runs in order:
-  1. File1_Raw  → f1_daily.csv          (parse_psp_pdf_xls_file1.py)
-  2. File2_Raw  → Dataset/study1_daily.csv (parse_psp_pdf_xls_file2.py)
-  3. File3_Raw  → Dataset/study2_scada.csv (parse_psp_xls_pdf_file3.py)
-  4. f1_daily + hourlyLoadDataIndia.xlsx → Dataset/study1_hourly.csv (in-process join)
+  1. Dataset/Raw/File1_Raw  → f1_daily.csv                        (parse_psp_pdf_xls_file1.py)
+  2. Dataset/Raw/File2_Raw  → Dataset/study1_daily.csv             (parse_psp_pdf_xls_file2.py)
+  3. Dataset/Raw/File3_Raw  → Dataset/study2_scada.csv             (parse_psp_xls_pdf_file3.py long)
+  4. f1_daily + Reference/hourlyLoadDataIndia.xlsx
+               → Dataset/study1_hourly.csv             (in-process pandas join)
+
+Steps 1-3 run as subprocesses so each parser's stdout flows straight to the console.
+Step 4 is in-process: left-joins f1_daily onto hourly rows (each daily PSP row
+broadcasts onto all 24 hourly rows for that date).
+
+After all steps, prints row × col counts, date range, overall null %, and the 8
+worst-null columns for each output. Warns if any dataset falls below baseline row count.
+
+Does NOT run the validation gate (validate.py — roadmap §1b) or push to Kaggle
+(that's daily_scrape.yml step 6). Does NOT download raw files (use local_download.py).
+
+Expected run time: 15–45 min for a full rebuild over ~2,660 files.
+Incremental rebuilds with --skip-file1/2 run in under a minute.
 
 Usage:
-  python build_all.py                    # full rebuild
-  python build_all.py --skip-file1       # skip File1 parse (f1_daily.csv already exists)
-  python build_all.py --skip-file2       # skip File2 parse
-  python build_all.py --skip-file3       # skip File3 parse
-  python build_all.py --skip-hourly      # skip hourly join
-  python build_all.py --only-hourly      # only redo the hourly join
+  python Pipeline/build_all.py                    # full rebuild
+  python Pipeline/build_all.py --skip-file1       # skip File1 parse (f1_daily.csv already exists)
+  python Pipeline/build_all.py --skip-file2       # skip File2 parse
+  python Pipeline/build_all.py --skip-file3       # skip File3 parse
+  python Pipeline/build_all.py --skip-hourly      # skip hourly join
+  python Pipeline/build_all.py --only-hourly      # only redo the hourly join
+
+  # Example: rebuilt only study2_scada (new files added to Dataset/Raw/File3_Raw):
+  python Pipeline/build_all.py --skip-file1 --skip-file2
 """
 
 import argparse
@@ -25,16 +42,16 @@ from pathlib import Path
 import pandas as pd
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-REPO_ROOT    = Path(__file__).resolve().parent
+REPO_ROOT    = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = REPO_ROOT / "Scrapings"
 DATASET_DIR  = REPO_ROOT / "Dataset"
 
-FILE1_RAW    = REPO_ROOT / "File1_Raw"
-FILE2_RAW    = REPO_ROOT / "File2_Raw"
-FILE3_RAW    = REPO_ROOT / "File3_Raw"
+FILE1_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File1_Raw"
+FILE2_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File2_Raw"
+FILE3_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File3_Raw"
 
 F1_DAILY     = REPO_ROOT / "f1_daily.csv"
-HOURLY_SRC   = REPO_ROOT / "hourlyLoadDataIndia.xlsx"
+HOURLY_SRC   = REPO_ROOT / "Reference" / "hourlyLoadDataIndia.xlsx"
 
 OUT_STUDY1_D = DATASET_DIR / "study1_daily.csv"
 OUT_STUDY1_H = DATASET_DIR / "study1_hourly.csv"
@@ -202,32 +219,4 @@ def main():
     if not args.skip_hourly:
         ok = build_study1_hourly()
         if not ok:
-            errors.append("hourly join failed")
-
-    # ── Summary ───────────────────────────────────────────────────────────────
-    print(f"\n{'='*60}")
-    print("  OUTPUT SUMMARY")
-    print(f"{'='*60}")
-
-    for label, path in [
-        ("study1_daily",  OUT_STUDY1_D),
-        ("study1_hourly", OUT_STUDY1_H),
-        ("study2_scada",  OUT_STUDY2),
-    ]:
-        _print_summary(label, path)
-
-    elapsed = (datetime.now() - start).seconds
-    print(f"\n  Elapsed: {elapsed}s")
-
-    if errors:
-        print(f"\n  ✗  Finished with {len(errors)} error(s):")
-        for e in errors:
-            print(f"     • {e}")
-        sys.exit(2)
-    else:
-        print("\n  ✓  All steps completed successfully.")
-        sys.exit(0)
-
-
-if __name__ == "__main__":
-    main()
+     

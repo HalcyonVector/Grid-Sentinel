@@ -29,8 +29,8 @@ REPO_ROOT    = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 STUDY1_CSV   = REPO_ROOT / "Dataset" / "study1_daily.csv"
 STUDY2_CSV   = REPO_ROOT / "Dataset" / "study2_scada.csv"
-FILE2_RAW    = REPO_ROOT / "File2_Raw"
-FILE3_RAW    = REPO_ROOT / "File3_Raw"
+FILE2_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File2_Raw"
+FILE3_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File3_Raw"
 
 sys.path.insert(0, str(SCRAPERS_DIR))
 
@@ -228,7 +228,7 @@ def scan_and_parse(lookback_days: int = 10) -> tuple[bool, bool]:
     raw_files = [f for f in all_files if (d := _parse_file_date(f)) and d >= cutoff]
 
     if not raw_files:
-        print(f"No raw files found in File3_Raw within the last {lookback_days} days.")
+        print(f"No raw files found in Dataset/Raw/File3_Raw within the last {lookback_days} days.")
         return False, False
 
     print(f"Scanning {len(raw_files)} file(s) from {cutoff} onward (of {len(all_files)} total).")
@@ -248,7 +248,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", help="Target data date (YYYY-MM-DD). Default: yesterday.")
     parser.add_argument("--scan", action="store_true",
-                        help="Parse all unparsed files in File3_Raw (used for push-triggered runs).")
+                        help="Parse all unparsed files in Dataset/Raw/File3_Raw (used for push-triggered runs).")
     args = parser.parse_args()
 
     from download_psp_new import stem
@@ -260,7 +260,7 @@ def main():
 
     # ── Scan mode: parse whatever is already in File3_Raw ────────────────────
     if args.scan:
-        print("Scan mode: parsing all unparsed files in File3_Raw...")
+        print("Scan mode: parsing all unparsed files in Dataset/Raw/File3_Raw...")
         s1_changed, s2_changed = scan_and_parse()
     else:
         # ── Download mode: fetch a specific or today's file ──────────────────
@@ -279,7 +279,7 @@ def main():
                 file2_dest = FILE2_RAW / raw_file.name
                 if not file2_dest.exists():
                     shutil.copy2(raw_file, file2_dest)
-                    print(f"  Copied to File2_Raw: {raw_file.name}")
+                    print(f"  Copied to Dataset/Raw/File2_Raw: {raw_file.name}")
                 break
         else:
             print("\nNo file available yet — will retry at next scheduled run.")
