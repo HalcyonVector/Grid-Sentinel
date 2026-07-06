@@ -49,7 +49,8 @@ def main():
     parser.add_argument("--date", help="File date to download (YYYY-MM-DD). Default: today and yesterday.")
     args = parser.parse_args()
 
-    LOOKBACK_DAYS = 5  # check up to this many days back for missed downloads
+    LOOKBACK_DAYS = 7  # check up to this many days back for missed downloads
+                       # (today + 6 previous days) to cover source publish lag
 
     if args.date:
         file_dates = [date.fromisoformat(args.date)]
@@ -105,8 +106,10 @@ def main():
     # The GitHub Actions bot commits parsed CSVs back to main after every run,
     # so the remote is usually AHEAD of this local clone. Without this rebase the
     # push is rejected as a non-fast-forward ("Updates were rejected... fetch first").
-    # Rebase our new commit on top of the remote, then push.
-    git("pull", "--rebase", "origin", "main")
+    # Rebase our new commit on top of the remote, then push. --autostash tucks
+    # away any stray uncommitted changes (e.g. an edited script) so the rebase
+    # can't fail with "cannot pull with rebase: You have unstaged changes".
+    git("pull", "--rebase", "--autostash", "origin", "main")
     git("push")
     log.info("Pushed to GitHub — Actions will parse and update CSVs shortly.")
 
