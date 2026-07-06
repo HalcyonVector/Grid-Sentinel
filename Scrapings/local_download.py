@@ -102,6 +102,11 @@ def main():
         return
 
     git("commit", "-m", f"chore: add raw PSP file(s) {', '.join(new_files)}")
+    # The GitHub Actions bot commits parsed CSVs back to main after every run,
+    # so the remote is usually AHEAD of this local clone. Without this rebase the
+    # push is rejected as a non-fast-forward ("Updates were rejected... fetch first").
+    # Rebase our new commit on top of the remote, then push.
+    git("pull", "--rebase", "origin", "main")
     git("push")
     log.info("Pushed to GitHub — Actions will parse and update CSVs shortly.")
 
