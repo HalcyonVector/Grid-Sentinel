@@ -84,7 +84,7 @@ def _pdf_extract_date(pdf):
     """
     Extract the data date from a PSP PDF.
 
-    Source: Subject line only — "Sub: Daily PSP Report for the date DD.MM.YYYY"
+    Source: Subject line only -- "Sub: Daily PSP Report for the date DD.MM.YYYY"
     This directly names the date the data covers, unlike 'Date of Reporting'
     which is the next day (when the report was published).
 
@@ -375,7 +375,7 @@ def _pdf_diversity(tables):
 
 
 def parse_pdf(filepath):
-    """Parse a single PSP PDF → dict of daily features."""
+    """Parse a single PSP PDF -> dict of daily features."""
     import pdfplumber
     with pdfplumber.open(filepath) as pdf:
         date = _pdf_extract_date(pdf)
@@ -567,7 +567,7 @@ def _xls_parse_mop_e(df):
                     result["trans_bhutan_mu"]     = fval(k, bhutan_col) if bhutan_col else None
                     result["trans_nepal_mu"]       = fval(k, nepal_col) if nepal_col else None
                     result["trans_bangladesh_mu"]  = fval(k, bd_col) if bd_col else None
-                    # Godda → Bangladesh (new in 2024)
+                    # Godda -> Bangladesh (new in 2024)
                     if godda_col:
                         result["trans_godda_bangladesh_mu"] = fval(k, godda_col)
                     break
@@ -661,7 +661,7 @@ def _xls_parse_mop_e(df):
                             break
                 break
 
-    # Share rows — All India value is the last non-NaN numeric in the row
+    # Share rows -- All India value is the last non-NaN numeric in the row
     for i, row in df.iterrows():
         lbl = str(row.iloc[0]).strip().lower() if not pd.isna(row.iloc[0]) else ""
         if "share of res" in lbl:
@@ -750,7 +750,7 @@ def _xls_parse_crossborder(df):
 
 def _xls_parse_ir_line(df):
     """
-    Parse the IR-Line sheet — inter-regional exchange aggregated to region pairs.
+    Parse the IR-Line sheet -- inter-regional exchange aggregated to region pairs.
 
     Reads the pre-summed subtotal rows the sheet provides (cols: 0=pair label,
     6=import MU, 7=export MU, 9=net MU). Present from FY2023 onwards.
@@ -770,7 +770,7 @@ def _xls_parse_ir_line(df):
 
 
 def parse_xls(filepath):
-    """Parse a single PSP XLS file → dict of daily features."""
+    """Parse a single PSP XLS file -> dict of daily features."""
     xl = pd.ExcelFile(filepath, engine="xlrd")
     sheets = xl.sheet_names
 
@@ -814,7 +814,7 @@ def parse_file(filepath):
     elif ext in (".xls", ".xlsx"):
         return parse_xls(str(filepath))
     else:
-        print(f"  WARNING: unsupported extension '{ext}' — {Path(filepath).name}")
+        print(f"  WARNING: unsupported extension '{ext}' -- {Path(filepath).name}")
         return None
 
 
@@ -867,7 +867,7 @@ def build_dataset(input_path, output_csv):
         print(f"Deduplicated {n_dup} duplicate-date row(s).")
     df = df.sort_values("date").reset_index(drop=True)
     df.to_csv(output_csv, index=False)
-    print(f"\nSaved {len(df)} rows → {output_csv}")
+    print(f"\nSaved {len(df)} rows -> {output_csv}")
     print(f"Columns ({len(df.columns)}): {df.columns.tolist()}")
     return df
 
@@ -881,7 +881,7 @@ if __name__ == "__main__":
             for k, v in r.items():
                 print(f"{k}: {v}")
         else:
-            print("Failed to parse — see warnings above.")
+            print("Failed to parse -- see warnings above.")
     else:
         print("Usage: python parse_psp.py INPUT_DIR OUTPUT_CSV")
         print("   or: python parse_psp.py single_file.pdf")

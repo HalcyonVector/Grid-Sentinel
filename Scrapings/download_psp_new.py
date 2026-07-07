@@ -100,13 +100,13 @@ def scrape_cdn_index(fy_years: list[str] | None = None) -> dict[str, str]:
     clicking through all pages. Returns { "28.05.25" -> full_url }.
 
     fy_years: limit scraping to these FY labels (e.g. ["2026-27"]).
-              If None, scrapes all available years (slow — for bulk downloads).
+              If None, scrapes all available years (slow -- for bulk downloads).
     Returns empty dict if Playwright is unavailable or the site is unreachable.
     """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        print("WARNING: Playwright not installed — CDN listing scrape unavailable.")
+        print("WARNING: Playwright not installed -- CDN listing scrape unavailable.")
         return {}
 
     index = {}
@@ -205,7 +205,7 @@ def scrape_cdn_index(fy_years: list[str] | None = None) -> dict[str, str]:
         browser.close()
 
     except Exception as e:
-        print(f"WARNING: Playwright scrape failed ({type(e).__name__}: {e}) — returning empty index.")
+        print(f"WARNING: Playwright scrape failed ({type(e).__name__}: {e}) -- returning empty index.")
         return {}
 
     print(f"\nScraped {len(index)} unique dates total.\n")
@@ -258,7 +258,7 @@ def download_range(start: date, end: date, out_dir: Path, delay: float = 1.0, fy
                 ext = url.rsplit(".", 1)[-1]
                 content = fetch_bytes(url)
             else:
-                print(f"FAIL {d.isoformat()}  — not in listing (holiday/missing)")
+                print(f"FAIL {d.isoformat()}  -- not in listing (holiday/missing)")
                 failed.append(d.isoformat())
                 d += timedelta(days=1)
                 time.sleep(delay)
@@ -271,7 +271,7 @@ def download_range(start: date, end: date, out_dir: Path, delay: float = 1.0, fy
             print(f"OK   {d.isoformat()}  [{ext}]  ({len(content):,} bytes)")
         else:
             failed.append(d.isoformat())
-            print(f"FAIL {d.isoformat()}  — download failed")
+            print(f"FAIL {d.isoformat()}  -- download failed")
 
         time.sleep(delay)
         d += timedelta(days=1)

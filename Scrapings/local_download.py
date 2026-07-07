@@ -1,5 +1,5 @@
 """
-local_download.py — Run locally (on Windows) to download today's PSP file and
+local_download.py -- Run locally (on Windows) to download today's PSP file and
 push it to the repo. GitHub Actions will then parse and update the CSVs.
 
 Usage:
@@ -66,13 +66,13 @@ def main():
     for file_date in file_dates:
         s = stem(file_date)
 
-        # Already downloaded — skip this day but keep checking older ones
+        # Already downloaded -- skip this day but keep checking older ones
         existing = list(FILE3_RAW.glob(f"{s}_NLDC_PSP*"))
         if existing:
-            log.info(f"Already have {existing[0].name} — skipping.")
+            log.info(f"Already have {existing[0].name} -- skipping.")
             continue
 
-        # Only scrape the FY that contains this date — much faster
+        # Only scrape the FY that contains this date -- much faster
         year = file_date.year if file_date.month >= 4 else file_date.year - 1
         fy = f"{year}-{str(year + 1)[-2:]}"
         log.info(f"Downloading {s} (FY {fy} only)...")
@@ -88,7 +88,7 @@ def main():
             new_files.append(raw_file.name)
 
     if not new_files:
-        log.info("No new files downloaded — nothing to push.")
+        log.info("No new files downloaded -- nothing to push.")
         return
 
     # Commit and push so GitHub Actions picks it up for parsing
@@ -111,7 +111,7 @@ def main():
     # can't fail with "cannot pull with rebase: You have unstaged changes".
     git("pull", "--rebase", "--autostash", "origin", "main")
     git("push")
-    log.info("Pushed to GitHub — Actions will parse and update CSVs shortly.")
+    log.info("Pushed to GitHub -- Actions will parse and update CSVs shortly.")
 
 
 if __name__ == "__main__":

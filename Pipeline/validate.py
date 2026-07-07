@@ -31,7 +31,7 @@ STUDY2   = DATASET_DIR / "study2_scada.csv"
 BASELINE_ROWS = {
     "study1_daily":  2660,
     "study1_hourly": 46728,
-    "study2_scada":  55068,
+    "study2_scada":  56796,  # 2026-07-07: full rebuild from all raw XLS files after discovering ~40% of legacy date labels were wrong (day/month transposed)
 }
 
 BASELINE_COLS = {
@@ -115,6 +115,9 @@ def check_study1_daily() -> None:
         ok(label, "no duplicate dates")
 
     # Data freshness
+    # NOTE: dates here are clean ISO (YYYY-MM-DD), which is unambiguous. Do NOT
+    # add dayfirst=True -- combined with format="mixed" it makes pandas misparse
+    # valid ISO strings (e.g. "2026-06-12" gets read back as 2026-12-06).
     if "date" in df.columns:
         latest = pd.to_datetime(df["date"]).max().date()
         lag = (date.today() - latest).days
@@ -196,6 +199,9 @@ def check_study2_scada() -> None:
             ok(label, "no duplicate (date, hhmm) pairs")
 
     # Data freshness
+    # NOTE: dates here are clean ISO (YYYY-MM-DD), which is unambiguous. Do NOT
+    # add dayfirst=True -- combined with format="mixed" it makes pandas misparse
+    # valid ISO strings (e.g. "2026-06-12" gets read back as 2026-12-06).
     if "date" in df.columns:
         latest = pd.to_datetime(df["date"]).max().date()
         lag = (date.today() - latest).days
@@ -203,6 +209,8 @@ def check_study2_scada() -> None:
             warn(label, f"latest date is {latest} ({lag} days ago)")
         else:
             ok(label, f"latest date = {latest} ({lag} day(s) lag)")
+        if latest > date.today():
+            fail(label, f"latest date {latest} is in the future -- likely corrupt/mislabeled rows in the source data")
 
     # Slots per day
     if "date" in df.columns:
@@ -267,7 +275,7 @@ def check_study1_hourly() -> None:
     # Datetime column
     date_col = "datetime" if "datetime" in df.columns else ("date" if "date" in df.columns else None)
     if date_col:
-        latest = pd.to_datetime(df[date_col]).max()
+        latest = pd.to_datetime(df[date_col], format="mixed", dayfirst=True).max()
         ok(label, f"latest {date_col} = {latest.date()}")
     else:
         warn(label, "no date or datetime column found")

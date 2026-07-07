@@ -42,7 +42,7 @@ def _parse_date_str(raw):
 
 def _pdf_extract_date(pdf):
     from datetime import timedelta
-    # ── 1. Subject line: "for the date DD.MM.YYYY" — explicit data date, no offset needed
+    # ── 1. Subject line: "for the date DD.MM.YYYY" -- explicit data date, no offset needed
     sub_re = re.compile(
         r"for\s+the\s+date\s+(\d{1,2}[.\-/]\d{1,2}[.\-/]\d{2,4})",
         re.IGNORECASE,
@@ -55,7 +55,7 @@ def _pdf_extract_date(pdf):
             if d:
                 return d
 
-    # ── 2. "Date of Reporting" — publication date; data is from the previous day
+    # ── 2. "Date of Reporting" -- publication date; data is from the previous day
     text2 = (pdf.pages[1].extract_text() or "") if len(pdf.pages) > 1 else ""
     m = re.search(r"Date of Reporting\s+(\d{1,2}[-\s]\w{3}[-\s]\d{2,4})", text2)
     if m:
@@ -63,7 +63,7 @@ def _pdf_extract_date(pdf):
         if d:
             return d - timedelta(days=1)
 
-    # ── 3. Fallback: any date pattern on page 2, then page 1 — subtract 1 day
+    # ── 3. Fallback: any date pattern on page 2, then page 1 -- subtract 1 day
     m = re.search(r"\b(\d{1,2}-\w{3}-\d{2,4})\b", text2)
     if m:
         d = _parse_date_str(m.group(1))
@@ -335,7 +335,7 @@ def _pdf_diversity(tables):
 
 
 def parse_pdf(filepath):
-    """Parse a single PSP PDF → dict of daily features."""
+    """Parse a single PSP PDF -> dict of daily features."""
     import pdfplumber
     with pdfplumber.open(filepath) as pdf:
         date = _pdf_extract_date(pdf)
@@ -530,7 +530,7 @@ def _xls_parse_mop_e(df):
                     result["trans_bhutan_mu"]     = fval(k, bhutan_col) if bhutan_col else None
                     result["trans_nepal_mu"]       = fval(k, nepal_col) if nepal_col else None
                     result["trans_bangladesh_mu"]  = fval(k, bd_col) if bd_col else None
-                    # Godda → Bangladesh (new in 2024)
+                    # Godda -> Bangladesh (new in 2024)
                     if godda_col:
                         result["trans_godda_bangladesh_mu"] = fval(k, godda_col)
                     break
@@ -624,7 +624,7 @@ def _xls_parse_mop_e(df):
                             break
                 break
 
-    # Share rows — All India value is the last non-NaN numeric in the row
+    # Share rows -- All India value is the last non-NaN numeric in the row
     for i, row in df.iterrows():
         lbl = str(row.iloc[0]).strip().lower() if not pd.isna(row.iloc[0]) else ""
         if "share of res" in lbl:
@@ -713,7 +713,7 @@ def _xls_parse_crossborder(df):
 
 def _xls_parse_ir_line(df):
     """
-    Parse the IR-Line sheet — inter-regional exchange aggregated to region pairs.
+    Parse the IR-Line sheet -- inter-regional exchange aggregated to region pairs.
 
     Instead of emitting one set of columns per individual corridor (~340 cols),
     we read only the pre-summed subtotal rows that the sheet already provides:
@@ -749,8 +749,8 @@ def _xls_parse_ir_line(df):
 def _parse_timeseries_time_cell(val):
     """
     Decode a TIME-column cell into (hh, mm). Handles three formats:
-      1. datetime.time object  — pandas coercion of XLS time cells
-      2. float fraction-of-day — xlrd type=3 surfaced as float
+      1. datetime.time object  -- pandas coercion of XLS time cells
+      2. float fraction-of-day -- xlrd type=3 surfaced as float
       3. string "H:MM:SS" or "H:MM"
     Returns (hh, mm) as ints, or None if unrecognisable.
     """
@@ -775,7 +775,7 @@ def _parse_timeseries_time_cell(val):
 
 def _xls_parse_timeseries_records(df):
     """
-    Parse the TimeSeries sheet into a list of per-15-min-block records —
+    Parse the TimeSeries sheet into a list of per-15-min-block records --
     the shared core used by both the wide (one-row-per-day) and long
     (one-row-per-15-min-block) builders.
 
@@ -789,7 +789,7 @@ def _xls_parse_timeseries_records(df):
     Returns: list of dicts, each like
         {"hhmm": "0000", "time": "00:00", "freq_hz": 49.99,
          "demand_met_mw": 147488.0, "nuclear_mw": ..., ...}
-    Does NOT attach a date — callers do that.
+    Does NOT attach a date -- callers do that.
     """
     records = []
 
@@ -843,13 +843,13 @@ def _xls_parse_timeseries_records(df):
     for i in range(header_idx + 1, len(df)):
         cell_val = df.iloc[i, 0]
         if pd.isna(cell_val):
-            continue  # blank separator row — skip, don't stop
+            continue  # blank separator row -- skip, don't stop
         parsed = _parse_timeseries_time_cell(cell_val)
         if parsed is None:
             if data_started:
-                break  # footer/disclaimer after data — stop
+                break  # footer/disclaimer after data -- stop
             else:
-                continue  # units sub-header before data — skip
+                continue  # units sub-header before data -- skip
         data_started = True
         hh, mm = parsed
         rec = {"hhmm": f"{hh:02d}{mm:02d}", "time": f"{hh:02d}:{mm:02d}"}
@@ -866,7 +866,7 @@ def _xls_parse_timeseries(df):
     into 96 columns named ts_<metric>_HHMM (e.g. ts_freq_hz_0000,
     ts_demand_met_mw_1915, ...). Good for daily-level analysis.
 
-    For the long/tidy view (one row per 15-min block — what Study 2's
+    For the long/tidy view (one row per 15-min block -- what Study 2's
     frequency-violation classifier needs), use _xls_parse_timeseries_records()
     directly, or run this script in "long" mode (see build_timeseries_long).
     """
@@ -881,7 +881,7 @@ def _xls_parse_timeseries(df):
 
 
 def parse_xls(filepath):
-    """Parse a single PSP XLS file → dict of daily features."""
+    """Parse a single PSP XLS file -> dict of daily features."""
     xl = pd.ExcelFile(filepath, engine="xlrd")
     sheets = xl.sheet_names
 
@@ -910,7 +910,7 @@ def parse_xls(filepath):
         df_cb = _xls_read_sheet(filepath, "CrossBorder")
         row.update(_xls_parse_crossborder(df_cb))
 
-    # TimeSeries sheet (FY2025+, optional) — 15-min SCADA data, wide format
+    # TimeSeries sheet (FY2025+, optional) -- 15-min SCADA data, wide format
     if "TimeSeries" in sheets:
         df_ts = _xls_read_sheet(filepath, "TimeSeries")
         row.update(_xls_parse_timeseries(df_ts))
@@ -930,7 +930,7 @@ def parse_file(filepath):
     elif ext in (".xls", ".xlsx"):
         return parse_xls(str(filepath))
     else:
-        print(f"  WARNING: unsupported extension '{ext}' — {Path(filepath).name}")
+        print(f"  WARNING: unsupported extension '{ext}' -- {Path(filepath).name}")
         return None
 
 
@@ -973,7 +973,7 @@ def build_dataset(input_path, output_csv):
 
     df = pd.DataFrame(rows).sort_values("date").reset_index(drop=True)
     df.to_csv(output_csv, index=False)
-    print(f"\nSaved {len(df)} rows → {output_csv}")
+    print(f"\nSaved {len(df)} rows -> {output_csv}")
     print(f"Columns ({len(df.columns)}): {df.columns.tolist()}")
     return df
 
@@ -1074,7 +1074,7 @@ def build_timeseries_long(input_path, output_csv):
     df = df[front + [c for c in df.columns if c not in front]]
     df = df.sort_values(["date", "hhmm"]).reset_index(drop=True)
     df.to_csv(output_csv, index=False)
-    print(f"\nSaved {len(df)} rows (long format) → {output_csv}")
+    print(f"\nSaved {len(df)} rows (long format) -> {output_csv}")
     print(f"Columns ({len(df.columns)}): {df.columns.tolist()}")
     return df
 
@@ -1090,7 +1090,7 @@ if __name__ == "__main__":
             for k, v in r.items():
                 print(f"{k}: {v}")
         else:
-            print("Failed to parse — see warnings above.")
+            print("Failed to parse -- see warnings above.")
     else:
         print("Usage: python parse_psp.py INPUT_DIR OUTPUT_CSV              (wide, one row per day)")
         print("   or: python parse_psp.py long INPUT_DIR OUTPUT_CSV        (long, one row per 15-min block; FY2025+ only)")

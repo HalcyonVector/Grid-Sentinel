@@ -1,14 +1,14 @@
 """
-update_live.py — Daily incremental update for Grid-Sentinel live pipeline.
+update_live.py -- Daily incremental update for Grid-Sentinel live pipeline.
 
 Downloads today's PSP file from NLDC, parses it, and appends new rows to:
   - Dataset/study1_daily.csv   (one daily row)
   - Dataset/study2_scada.csv   (96 fifteen-minute rows, only if TimeSeries sheet present)
 
 Exit codes:
-  0  — success, CSVs updated
-  1  — file not published yet (safe to retry later)
-  2  — unexpected error
+  0  -- success, CSVs updated
+  1  -- file not published yet (safe to retry later)
+  2  -- unexpected error
 
 Usage:
   python Scrapings/update_live.py
@@ -39,9 +39,9 @@ def download_today(target_date: date, out_dir: Path) -> Path | None:
     """
     Download the PSP file for target_date into out_dir.
     Tries in order:
-      1. Old CDN direct URL (report.grid-india.in) — no browser needed
-      2. CDN S3 listing (webcdn.grid-india.in) — no browser needed
-      3. Playwright listing scrape — fallback for local runs
+      1. Old CDN direct URL (report.grid-india.in) -- no browser needed
+      2. CDN S3 listing (webcdn.grid-india.in) -- no browser needed
+      3. Playwright listing scrape -- fallback for local runs
     Returns the local file path on success, None if not found.
     """
     from download_psp_new import (
@@ -101,14 +101,19 @@ def append_study1(raw_file: Path) -> bool:
 
     row_date = str(row["date"])
     existing = pd.read_csv(STUDY1_CSV)
-    existing["date"] = pd.to_datetime(existing["date"], format="mixed", dayfirst=True).dt.strftime("%Y-%m-%d")
+    # NOTE: dates in this file are already clean ISO (YYYY-MM-DD). Do NOT use
+    # dayfirst=True with format="mixed" here -- on pandas 3.x this misparses
+    # valid ISO strings (e.g. "2026-06-12" silently becomes "2026-12-06").
+    # This was confirmed as the actual root cause of widespread date corruption
+    # in study2_scada.csv. Use an explicit ISO format instead.
+    existing["date"] = pd.to_datetime(existing["date"], format="%Y-%m-%d").dt.strftime("%Y-%m-%d")
 
     if row_date in existing["date"].values:
-        print(f"  study1_daily: {row_date} already present — skipping.")
+        print(f"  study1_daily: {row_date} already present -- skipping.")
         return False
 
     new_row = pd.DataFrame([row])
-    # Align columns — add missing cols as NaN, drop extra cols
+    # Align columns -- add missing cols as NaN, drop extra cols
     for col in existing.columns:
         if col not in new_row.columns:
             new_row[col] = float("nan")
@@ -130,37 +135,42 @@ def append_study2(raw_file: Path) -> bool:
     try:
         build_timeseries_long(str(raw_file), str(tmp_csv))
     except Exception as e:
-        print(f"  study2_scada: parser error for {raw_file.name} — {e}")
+        print(f"  study2_scada: parser error for {raw_file.name} -- {e}")
         tmp_csv.unlink(missing_ok=True)
         return False
 
     try:
         new_rows = pd.read_csv(tmp_csv)
     except (pd.errors.EmptyDataError, Exception) as e:
-        print(f"  study2_scada: no TimeSeries data in {raw_file.name} — {e}")
+        print(f"  study2_scada: no TimeSeries data in {raw_file.name} -- {e}")
         tmp_csv.unlink(missing_ok=True)
         return False
     finally:
         tmp_csv.unlink(missing_ok=True)
 
     if new_rows.empty:
-        print(f"  study2_scada: no TimeSeries sheet in {raw_file.name} — skipping.")
+        print(f"  study2_scada: no TimeSeries sheet in {raw_file.name} -- skipping.")
         return False
 
     # Standardise date to ISO
-    new_rows["date"] = pd.to_datetime(new_rows["date"], format="mixed", dayfirst=True).dt.strftime("%Y-%m-%d")
+    # NOTE: these dates are already clean ISO (YYYY-MM-DD) coming out of
+    # build_timeseries_long(). Do NOT use dayfirst=True with format="mixed" --
+    # on pandas 3.x this misparses valid ISO strings (e.g. "2026-06-12" silently
+    # becomes "2026-12-06"). This was confirmed as the actual root cause of
+    # widespread date corruption in study2_scada.csv. Use an explicit ISO format.
+    new_rows["date"] = pd.to_datetime(new_rows["date"], format="%Y-%m-%d").dt.strftime("%Y-%m-%d")
     new_date = new_rows["date"].iloc[0]
 
     existing = pd.read_csv(STUDY2_CSV)
-    existing["date"] = pd.to_datetime(existing["date"], format="mixed", dayfirst=True).dt.strftime("%Y-%m-%d")
+    existing["date"] = pd.to_datetime(existing["date"], format="%Y-%m-%d").dt.strftime("%Y-%m-%d")
 
     if new_date in existing["date"].values:
-        print(f"  study2_scada: {new_date} already present — skipping.")
+        print(f"  study2_scada: {new_date} already present -- skipping.")
         return False
 
     # Drop stub days (< 10 slots)
     if len(new_rows) < 10:
-        print(f"  study2_scada: {new_date} has only {len(new_rows)} slots — stub, skipping.")
+        print(f"  study2_scada: {new_date} has only {len(new_rows)} slots -- stub, skipping.")
         return False
 
     # Align columns
@@ -174,6 +184,7 @@ def append_study2(raw_file: Path) -> bool:
     updated = updated.drop_duplicates(subset=["date", "hhmm"], keep="last")
     if len(updated) < before:
         print(f"  study2_scada: dropped {before - len(updated)} duplicate rows.")
+    updated = updated.sort_values(["date", "hhmm"]).reset_index(drop=True)
     updated.to_csv(STUDY2_CSV, index=False)
     print(f"  study2_scada: appended {len(new_rows)} rows for {new_date}")
     return True
@@ -185,7 +196,9 @@ def validate(study1_changed: bool, study2_changed: bool):
 
     if study1_changed:
         df1 = pd.read_csv(STUDY1_CSV)
-        df1["date"] = pd.to_datetime(df1["date"], format="mixed", dayfirst=True)
+        # dates are already clean ISO -- no dayfirst=True (see note above; on
+        # pandas 3.x it silently corrupts valid ISO strings).
+        df1["date"] = pd.to_datetime(df1["date"], format="%Y-%m-%d")
         dups = df1.duplicated("date").sum()
         if dups > 0:
             errors.append(f"study1_daily: {dups} duplicate dates after append")
@@ -209,7 +222,7 @@ def validate(study1_changed: bool, study2_changed: bool):
 
 
 def _parse_file_date(path: Path) -> date | None:
-    """Extract date from filename like 19.06.25_NLDC_PSP.xls → date(2025, 6, 19)."""
+    """Extract date from filename like 19.06.25_NLDC_PSP.xls -> date(2025, 6, 19)."""
     try:
         parts = path.name.split("_")[0].split(".")
         return date(2000 + int(parts[2]), int(parts[1]), int(parts[0]))
@@ -234,12 +247,27 @@ def scan_and_parse(lookback_days: int = 10) -> tuple[bool, bool]:
     print(f"Scanning {len(raw_files)} file(s) from {cutoff} onward (of {len(all_files)} total).")
     s1_any = False
     s2_any = False
+    scan_errors = []
     for raw_file in raw_files:
         print(f"\nParsing {raw_file.name}...")
-        s1 = append_study1(raw_file)
-        s2 = append_study2(raw_file)
+        try:
+            s1 = append_study1(raw_file)
+        except Exception as e:
+            print(f"  study1_daily: ERROR processing {raw_file.name} -- {e!r} (skipping this file, continuing scan)")
+            scan_errors.append((raw_file.name, "study1", repr(e)))
+            s1 = False
+        try:
+            s2 = append_study2(raw_file)
+        except Exception as e:
+            print(f"  study2_scada: ERROR processing {raw_file.name} -- {e!r} (skipping this file, continuing scan)")
+            scan_errors.append((raw_file.name, "study2", repr(e)))
+            s2 = False
         s1_any = s1_any or s1
         s2_any = s2_any or s2
+
+    if scan_errors:
+        print(f"\n{len(scan_errors)} file(s) hit errors during scan (see above) -- "
+              f"any rows successfully appended before/around them are still kept.")
 
     return s1_any, s2_any
 
@@ -253,7 +281,7 @@ def main():
 
     from download_psp_new import stem
 
-    print(f"\n=== Grid-Sentinel daily update — {date.today()} ===\n")
+    print(f"\n=== Grid-Sentinel daily update -- {date.today()} ===\n")
 
     FILE2_RAW.mkdir(exist_ok=True)
     FILE3_RAW.mkdir(exist_ok=True)
@@ -282,7 +310,7 @@ def main():
                     print(f"  Copied to Dataset/Raw/File2_Raw: {raw_file.name}")
                 break
         else:
-            print("\nNo file available yet — will retry at next scheduled run.")
+            print("\nNo file available yet -- will retry at next scheduled run.")
             sys.exit(1)
 
         print(f"\nParsing {raw_file.name}...")

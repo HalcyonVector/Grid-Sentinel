@@ -1,21 +1,21 @@
 """
-build_all.py — Single-command rebuild for all Grid-Sentinel datasets.
+build_all.py -- Single-command rebuild for all Grid-Sentinel datasets.
 
 Runs in order:
-  1. Dataset/Raw/File1_Raw  → f1_daily.csv                        (parse_psp_pdf_xls_file1.py)
-  2. Dataset/Raw/File2_Raw  → Dataset/study1_daily.csv             (parse_psp_pdf_xls_file2.py)
-  3. Dataset/Raw/File3_Raw  → Dataset/study2_scada.csv             (parse_psp_xls_pdf_file3.py long)
+  1. Dataset/Raw/File1_Raw  -> f1_daily.csv                        (parse_psp_pdf_xls_file1.py)
+  2. Dataset/Raw/File2_Raw  -> Dataset/study1_daily.csv             (parse_psp_pdf_xls_file2.py)
+  3. Dataset/Raw/File3_Raw  -> Dataset/study2_scada.csv             (parse_psp_xls_pdf_file3.py long)
   4. f1_daily + Reference/hourlyLoadDataIndia.xlsx
-               → Dataset/study1_hourly.csv             (in-process pandas join)
+               -> Dataset/study1_hourly.csv             (in-process pandas join)
 
 Steps 1-3 run as subprocesses so each parser's stdout flows straight to the console.
 Step 4 is in-process: left-joins f1_daily onto hourly rows (each daily PSP row
 broadcasts onto all 24 hourly rows for that date).
 
-After all steps, prints row × col counts, date range, overall null %, and the 8
+After all steps, prints row x col counts, date range, overall null %, and the 8
 worst-null columns for each output. Warns if any dataset falls below baseline row count.
 
-Does NOT run the validation gate (validate.py — roadmap §1b) or push to Kaggle
+Does NOT run the validation gate (validate.py -- roadmap sec.1b) or push to Kaggle
 (that's daily_scrape.yml step 6). Does NOT download raw files (use local_download.py).
 
 Expected run time: 15–45 min for a full rebuild over ~2,660 files.
@@ -41,7 +41,7 @@ from pathlib import Path
 
 import pandas as pd
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
+# -- Paths ---------------------------------------------------------------------
 REPO_ROOT    = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = REPO_ROOT / "Scrapings"
 DATASET_DIR  = REPO_ROOT / "Dataset"
@@ -57,7 +57,7 @@ OUT_STUDY1_D = DATASET_DIR / "study1_daily.csv"
 OUT_STUDY1_H = DATASET_DIR / "study1_hourly.csv"
 OUT_STUDY2   = DATASET_DIR / "study2_scada.csv"
 
-# ── Expected baseline row counts (from roadmap) ───────────────────────────────
+# -- Expected baseline row counts (from roadmap) -------------------------------
 # Allowed to grow (new daily data added), but never shrink below these.
 BASELINES = {
     "study1_daily":  2660,
@@ -65,18 +65,18 @@ BASELINES = {
     "study2_scada":  55068,
 }
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# -- Helpers -------------------------------------------------------------------
 
 def _run(cmd: list[str], label: str) -> bool:
     """Run a subprocess; return True on success."""
-    print(f"\n{'─'*60}")
+    print(f"\n{'-'*60}")
     print(f"  [{label}] Running: {' '.join(str(c) for c in cmd)}")
-    print(f"{'─'*60}")
+    print(f"{'-'*60}")
     result = subprocess.run(cmd, check=False)
     if result.returncode != 0:
-        print(f"\n  ✗  [{label}] exited with code {result.returncode}")
+        print(f"\n  X  [{label}] exited with code {result.returncode}")
         return False
-    print(f"\n  ✓  [{label}] done")
+    print(f"\n  OK  [{label}] done")
     return True
 
 
@@ -93,14 +93,14 @@ def _null_summary(df: pd.DataFrame, top_n: int = 8) -> str:
 def _print_summary(label: str, path: Path):
     """Print row count and null summary for a CSV."""
     if not path.exists():
-        print(f"  ⚠  {label}: file not found at {path}")
+        print(f"  !  {label}: file not found at {path}")
         return
     df = pd.read_csv(path, low_memory=False)
     print(f"\n  {label}")
-    print(f"    rows × cols : {len(df):,} × {len(df.columns)}")
+    print(f"    rows x cols : {len(df):,} x {len(df.columns)}")
     date_col = "date" if "date" in df.columns else ("datetime" if "datetime" in df.columns else None)
     if date_col:
-        print(f"    date range  : {df[date_col].min()} → {df[date_col].max()}")
+        print(f"    date range  : {df[date_col].min()} -> {df[date_col].max()}")
     print(f"    overall null: {df.isnull().mean().mean():.1%}")
     print(f"    worst cols  :")
     print(_null_summary(df))
@@ -108,10 +108,10 @@ def _print_summary(label: str, path: Path):
     # Baseline check
     key = path.stem  # e.g. "study1_daily"
     if key in BASELINES and len(df) < BASELINES[key]:
-        print(f"\n  ⚠  WARNING: {key} has {len(df):,} rows — below baseline {BASELINES[key]:,}!")
+        print(f"\n  !  WARNING: {key} has {len(df):,} rows -- below baseline {BASELINES[key]:,}!")
 
 
-# ── Step 4: hourly join ───────────────────────────────────────────────────────
+# -- Step 4: hourly join -------------------------------------------------------
 
 def build_study1_hourly():
     """
@@ -119,20 +119,25 @@ def build_study1_hourly():
     Each daily PSP row broadcasts onto all 24 hourly rows for that date.
     Output: Dataset/study1_hourly.csv
     """
-    print(f"\n{'─'*60}")
+    print(f"\n{'-'*60}")
     print("  [hourly-join] Building study1_hourly.csv")
-    print(f"{'─'*60}")
+    print(f"{'-'*60}")
 
     if not F1_DAILY.exists():
-        print(f"  ✗  f1_daily.csv not found at {F1_DAILY} — run File1 parse first.")
+        print(f"  X  f1_daily.csv not found at {F1_DAILY} -- run File1 parse first.")
         return False
     if not HOURLY_SRC.exists():
-        print(f"  ✗  hourlyLoadDataIndia.xlsx not found at {HOURLY_SRC}")
+        print(f"  X  hourlyLoadDataIndia.xlsx not found at {HOURLY_SRC}")
         return False
 
     print("    Reading f1_daily.csv...")
     f1 = pd.read_csv(F1_DAILY, low_memory=False)
-    f1["date"] = pd.to_datetime(f1["date"], format="mixed", dayfirst=True).dt.strftime("%Y-%m-%d")
+    # f1_daily.csv dates are already clean ISO (YYYY-MM-DD). Do NOT use
+    # dayfirst=True with format="mixed" -- on pandas 3.x this misparses valid
+    # ISO strings (e.g. "2026-06-12" silently becomes "2026-12-06"), which was
+    # confirmed as the root cause of widespread date corruption elsewhere in
+    # this pipeline.
+    f1["date"] = pd.to_datetime(f1["date"], format="%Y-%m-%d").dt.strftime("%Y-%m-%d")
 
     print("    Reading hourlyLoadDataIndia.xlsx...")
     hourly = pd.read_excel(HOURLY_SRC)
@@ -141,13 +146,13 @@ def build_study1_hourly():
     if "datetime" not in hourly.columns:
         date_cols = [c for c in hourly.columns if "date" in c.lower()]
         if not date_cols:
-            print("  ✗  hourlyLoadDataIndia.xlsx has no recognisable date column.")
+            print("  X  hourlyLoadDataIndia.xlsx has no recognisable date column.")
             print(f"     Columns found: {list(hourly.columns)}")
             return False
         hourly.rename(columns={date_cols[0]: "datetime"}, inplace=True)
     hourly["date"] = pd.to_datetime(hourly["datetime"], format="mixed", dayfirst=True).dt.strftime("%Y-%m-%d")
 
-    print(f"    Merging: {len(hourly):,} hourly rows × {len(f1):,} daily PSP rows...")
+    print(f"    Merging: {len(hourly):,} hourly rows x {len(f1):,} daily PSP rows...")
     merged = hourly.merge(f1, on="date", how="left", suffixes=("", "_psp"))
     dup_cols = [c for c in merged.columns if c.endswith("_psp")]
     if dup_cols:
@@ -159,17 +164,17 @@ def build_study1_hourly():
 
     DATASET_DIR.mkdir(exist_ok=True)
     merged.to_csv(OUT_STUDY1_H, index=False)
-    print(f"    ✓  Wrote {len(merged):,} rows → {OUT_STUDY1_H}")
+    print(f"    OK  Wrote {len(merged):,} rows -> {OUT_STUDY1_H}")
     return True
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# -- Main ----------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--skip-file1",  action="store_true", help="Skip File1 → f1_daily parse")
-    parser.add_argument("--skip-file2",  action="store_true", help="Skip File2 → study1_daily parse")
-    parser.add_argument("--skip-file3",  action="store_true", help="Skip File3 → study2_scada parse")
+    parser.add_argument("--skip-file1",  action="store_true", help="Skip File1 -> f1_daily parse")
+    parser.add_argument("--skip-file2",  action="store_true", help="Skip File2 -> study1_daily parse")
+    parser.add_argument("--skip-file3",  action="store_true", help="Skip File3 -> study2_scada parse")
     parser.add_argument("--skip-hourly", action="store_true", help="Skip f1_daily + hourly join")
     parser.add_argument("--only-hourly", action="store_true", help="Only run the hourly join (implies --skip-file1/2/3)")
     args = parser.parse_args()
@@ -180,43 +185,67 @@ def main():
     DATASET_DIR.mkdir(exist_ok=True)
     start = datetime.now()
     print(f"\n{'='*60}")
-    print(f"  Grid-Sentinel — build_all.py — {start.strftime('%Y-%m-%d %H:%M')}")
+    print(f"  Grid-Sentinel -- build_all.py -- {start.strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}")
 
     errors = []
 
-    # ── Step 1: File1 → f1_daily ──────────────────────────────────────────────
+    # -- Step 1: File1 -> f1_daily ----------------------------------------------
     if not args.skip_file1:
         ok = _run(
             [sys.executable, str(SCRAPERS_DIR / "parse_psp_pdf_xls_file1.py"),
              str(FILE1_RAW), str(F1_DAILY)],
-            "file1→f1_daily"
+            "file1->f1_daily"
         )
         if not ok:
             errors.append("file1 parse failed")
 
-    # ── Step 2: File2 → study1_daily ─────────────────────────────────────────
+    # -- Step 2: File2 -> study1_daily -----------------------------------------
     if not args.skip_file2:
         ok = _run(
             [sys.executable, str(SCRAPERS_DIR / "parse_psp_pdf_xls_file2.py"),
              str(FILE2_RAW), str(OUT_STUDY1_D)],
-            "file2→study1_daily"
+            "file2->study1_daily"
         )
         if not ok:
             errors.append("file2 parse failed")
 
-    # ── Step 3: File3 → study2_scada ─────────────────────────────────────────
+    # -- Step 3: File3 -> study2_scada -----------------------------------------
     if not args.skip_file3:
         ok = _run(
             [sys.executable, str(SCRAPERS_DIR / "parse_psp_xls_pdf_file3.py"),
              "long", str(FILE3_RAW), str(OUT_STUDY2)],
-            "file3→study2_scada"
+            "file3->study2_scada"
         )
         if not ok:
             errors.append("file3 parse failed")
 
-    # ── Step 4: hourly join ───────────────────────────────────────────────────
+    # -- Step 4: hourly join -----------------------------------------------------
     if not args.skip_hourly:
         ok = build_study1_hourly()
         if not ok:
-     
+            errors.append("hourly join failed")
+
+    # -- Summary of all outputs ---------------------------------------------------
+    print(f"\n{'='*60}")
+    print("  Summary")
+    print(f"{'='*60}")
+    _print_summary("study1_daily", OUT_STUDY1_D)
+    _print_summary("study2_scada", OUT_STUDY2)
+    _print_summary("study1_hourly", OUT_STUDY1_H)
+
+    elapsed = datetime.now() - start
+    print(f"\n{'='*60}")
+    if errors:
+        print(f"  DONE WITH ERRORS ({len(errors)}) in {elapsed}")
+        for e in errors:
+            print(f"    - {e}")
+        print(f"{'='*60}\n")
+        sys.exit(1)
+    else:
+        print(f"  DONE -- all steps completed in {elapsed}")
+        print(f"{'='*60}\n")
+
+
+if __name__ == "__main__":
+    main()

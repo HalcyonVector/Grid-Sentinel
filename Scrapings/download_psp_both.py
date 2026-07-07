@@ -208,9 +208,9 @@ def download_range(start: date, end: date, out_dir: Path, delay: float = 1.0):
         else:
             failed.append(d.isoformat())
             if s in cdn_index:
-                print(f"FAIL {d.isoformat()}  — download failed (URL: {cdn_index[s]})")
+                print(f"FAIL {d.isoformat()}  -- download failed (URL: {cdn_index[s]})")
             else:
-                print(f"FAIL {d.isoformat()}  — not in index + fallbacks failed (holiday/missing?)")
+                print(f"FAIL {d.isoformat()}  -- not in index + fallbacks failed (holiday/missing?)")
 
         time.sleep(delay)
         d += timedelta(days=1)
