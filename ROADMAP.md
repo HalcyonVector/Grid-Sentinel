@@ -113,9 +113,16 @@ Everything here is done and verified. Datasets are as clean as the source data a
 
 Treat with forward-fill or time-series-aware imputation at model time.
 
-### Residual parser gap (~1%)
+### Residual parser gap (~0.5%)
 
-~27 rows (2019–2022) still miss generation/outage/inter-regional/transnational because those PDF sections render as one merged-text blob with no column grid. Demand, energy, max-demand, frequency, diversity and RES-share **are** recovered. Closing this needs a text-regex fallback — deferred to Phase 2.
+**Measured 2026-07-09** (superseding the earlier "~27" prose estimate, which wasn't cross-checked against the live CSV): **12 rows**, not 27, still miss `gen_*`/`outage_*` because those PDF sections render as one merged-text blob with no column grid. Demand, energy, max-demand, frequency, diversity and RES-share **are** recovered — confirmed by requiring at least one of `energy_met_total_mu`/`freq_fvi`/`diversity_regional` to be populated on every affected row. Closing this needs a text-regex fallback — deferred to Phase 2.
+
+| Date | Year |
+|------|------|
+| 2019-03-29, 2019-03-30 | 2019 |
+| 2019-11-18, 2019-11-19 | 2019 |
+| 2021-04-22, 2021-05-31, 2021-06-01, 2021-07-10, 2021-09-05, 2021-09-21, 2021-10-15 | 2021 |
+| 2022-06-01 | 2022 |
 
 ---
 
@@ -179,7 +186,7 @@ Three CSVs auto-pushed to Kaggle on every daily update via GitHub Actions (`kagg
 
 | Task | Priority |
 |------|----------|
-| Text-regex fallback for generation/outage on ~27 merged-blob PDFs (last ~1% of rows) | Medium |
+| Text-regex fallback for generation/outage on 12 merged-blob PDFs (last ~0.5% of rows) | Medium |
 | §C state-level table → `study3_states.csv` (~40 state entities, daily) — optional separate study | Low |
 | Backfill 2025-05-22/23 if NLDC re-publishes | Low |
 
@@ -190,7 +197,7 @@ Close the last ~1% gap in `study1_daily.csv` / `study1_hourly.csv` where generat
 ### What already exists
 
 - `Scrapings/parse_psp_pdf_xls_file1.py` and `parse_psp_pdf_xls_file2.py` already parse the structured-table case correctly — this is why demand, energy, max-demand, frequency, diversity, and RES-share still come through clean on the affected rows. Only the free-text-rendered generation/outage/IR/cross-border sections fail.
-- The ~27 affected dates (2019–2022) are already known from the Phase 0 spot-check and residual-gap analysis (see "Residual parser gap" above), but are not yet recorded anywhere as an explicit, machine-readable list.
+- The 12 affected dates (2019–2022) are now measured and listed in the "Residual parser gap" table above — no need to re-derive this list when Phase 2 work starts.
 
 ### What needs to be built
 
@@ -206,7 +213,7 @@ Close the last ~1% gap in `study1_daily.csv` / `study1_hourly.csv` where generat
 
 ### Step by step
 
-1. Pull the exact list of affected dates: rows in `study1_daily.csv` where `gen_*`/`outage_*`/`ir_*` are null but `energy_met_total_mu` is populated, filtered to PDF-era rows (pre-~2023).
+1. ✅ **Done (2026-07-09)** — exact list of affected dates pulled: rows in `study1_daily.csv` where `gen_*`/`outage_*` are null but at least one of `energy_met_total_mu`/`freq_fvi`/`diversity_regional` is populated, filtered to pre-2024 rows. Result: 12 dates, listed in "Residual parser gap" above.
 2. For 2–3 of those PDFs, dump the raw extracted text and identify the actual merged-blob pattern (e.g. "Coal 1234 Hydro 567 Nuclear 89" with no delimiters) to design the regex against.
 3. Write the fallback function, gated so it only runs when the structured parser returns nothing for that section — it must never silently override a correct structured parse.
 4. Rebuild the affected years only, e.g. `python Pipeline/build_all.py --skip-file3 --skip-hourly` (target File1/File2 only).
