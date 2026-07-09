@@ -281,36 +281,65 @@ Model artifacts are gitignored. The trained model will be stored separately (opt
 
 ---
 
-## Phase 3 — Study 1: Daily load forecasting 🔲
+## Central research question (2026-07-09) — spans Phases 3, 4, 5, 6
 
-**Owner:** collaborator (handed off 2026-07-09) — daily-only forecasting, per the scope decision below.
+**As India's grid monitoring granularity and renewable penetration have both increased 2019→2026, how has the observability and predictability of grid stress (demand ramps, frequency deviations) evolved — and once corridor/cross-border visibility exists in the data, do inter-regional congestion and cross-border exchange meaningfully predict short-term grid stress?**
 
-**Dataset:** `study1_daily.csv` (2,660 rows × 144 cols, 2019–present) only. `study1_hourly.csv` is explicitly **out of scope** for modelling — see "Decision: study1_hourly scope" under Phase 5. It's frozen at April 2024 and its only unique signal (hourly demand curve) is already superseded, at finer 15-min granularity and live, by `study2_scada.csv` in Phase 4.
+This supersedes treating Study 1 and Study 2 as two unrelated baselines. It's answered across **three eras**, each analyzed using the dataset that actually covers it — all three CSVs are load-bearing, none is decorative:
 
-**Targets:** next-day peak demand and/or next-day energy met. **Note:** confirm the exact column before building anything — the CSV header currently has `max_demand_met_total_mw` / `evening_peak_demand_total_mw` and `energy_met_total_mu`, not `peak_demand_met_total_mw` as earlier prose in this doc said; the schema and this roadmap's wording have drifted slightly.
+| Era | Window | What's available | What it answers | Dataset(s) used |
+|---|---|---|---|---|
+| **1 — Pre-corridor** | 2019–2022 | Daily features (full range) + hourly demand curve | Intra-day ramp characteristics; RES-share growth trend; establishes the baseline "ramp shocks becoming more frequent" evidence | `study1_daily.csv` + `study1_hourly.csv` |
+| **2 — Corridor-visible** | 2023–Oct 2024 | Daily features + IR-line (from 2023-01-01) + cross-border (from 2023-07-06) | Daily-resolution first pass: does corridor congestion / cross-border exchange correlate with daily frequency-band stress (`freq_pct_*`)? | `study1_daily.csv` |
+| **3 — Live full-visibility** | Nov 2024–present | 15-min SCADA + full corridor/cross-border broadcast + real frequency violations | Live, high-resolution, early-warning (lead-time) classifier: corridor/cross-border-aware ramp-shock + frequency-violation prediction | `study2_scada.csv` |
+
+**Why three eras, not one uniform model:** verified directly against the data (2026-07-09) — IR-line columns are null before 2023-01-01 (only 1,253 of 2,677 daily rows populated) and cross-border columns before 2023-07-06. There is no way to test the corridor/cross-border relationship across the full 2019–2026 span because the columns simply don't exist for most of it. Rather than pretending otherwise, the study is structured around what each era's data actually supports — this is a feature of the design, not a workaround.
+
+**Cross-phase dependency (accepted 2026-07-09):** phases run sequentially where the research question requires it — Phase 4's Era 3 model consumes Phase 3's forecast-residual signal, and Era 2's findings inform Era 3's feature design. Both collaborators are fine waiting on each other where the design calls for it; this is no longer being avoided for parallelism's sake.
+
+**Novelty check (verified via web search, 2026-07-09) — what already exists vs. what doesn't:**
+- Corridor-congestion → frequency-stability modelling: **exists** for European grids (explainable-AI studies on Germany and three European synchronous areas) — established method, **not done for India**.
+- Cross-border-exchange → grid-stability modelling: **only qualitative/policy discussion found** (e.g. the real April 2020 "9pm9minute" event, where neighbouring countries' hydro ramped up to help balance India's grid) — no quantitative model found for India or elsewhere in this specific form.
+- RE-penetration driving rising Indian grid stress: **a macro-level claim already exists** — an EAC-PM policy paper reported 2026-07-07 (two days before this analysis) makes almost this exact claim. This project's contribution must be positioned as a **granular, reproducible, ML-based complement to that finding**, not a discovery claim.
+- A three-era, evolving-observability design tied to one country's actual operational dataset: **no matching paper found** (related but distinct: PSML multi-scale benchmark dataset, Smart5Grid observability platform — neither is this specific design).
+- Second, targeted search for "India + frequency violation + ramp event + corridor congestion + ML" returned **no matching papers** — this specific combination, for India, appears genuinely open.
+
+---
+
+## Phase 3 — Study 1: daily forecasting + Era 1 ramp characterization 🔲
+
+**Owner:** collaborator (handed off 2026-07-09).
+
+**Datasets used:** `study1_daily.csv` (2,660 rows × 144 cols, 2019–present) for the forecasting model and the full-history RES-share trend; `study1_hourly.csv` (46,728 rows × 151 cols, 2019–2024, frozen) for the **Era 1** intra-day ramp characterization — this is a real analytical deliverable, not a dashboard-only afterthought.
+
+**Targets:**
+1. Next-day national demand/energy regression. **Note:** confirm the exact column before building — the CSV header currently has `max_demand_met_total_mw` / `evening_peak_demand_total_mw` and `energy_met_total_mu`, not `peak_demand_met_total_mw` as earlier prose in this doc said.
+2. Era 1 (2019–2022) intra-day demand-ramp magnitude/frequency characterization from the hourly curve, correlated against `share_res_pct` — a historical analysis, not a live model.
 
 ### Goal
 
-Predict next-day national (and ideally per-region) peak demand / energy met from `study1_daily.csv`'s generation, outage, frequency, and cross-border features.
+Predict next-day national (and ideally per-region) demand/energy from `study1_daily.csv`, output a forecast-residual signal for Phase 4 to consume, and produce the Era 1 historical ramp-characterization analysis from `study1_hourly.csv` that motivates the whole project's central research question.
 
 ### What already exists
 
-Nothing — no `ML/` directory exists in the repo yet. This phase starts from zero: no notebooks, no `features.py`, no trained model.
+Nothing — no `ML/` directory exists in the repo yet.
 
 ### What needs to be built
 
 ```
 ML/
-├── environment.yml                 conda env: Python 3.11, pandas, numpy, scikit-learn,
-│                                    lightgbm, torch, matplotlib, plotly, kaggle, jupyterlab
+├── environment.yml                        conda env: Python 3.11, pandas, numpy, scikit-learn,
+│                                           lightgbm, torch, matplotlib, plotly, kaggle, jupyterlab
 └── Study1/
     ├── notebooks/
-    │   ├── 01_eda.ipynb            Demand trends, seasonality, generation mix shift, missing data
-    │   ├── 02_features.ipynb       Lag features, rolling stats, calendar/seasonality encoding
-    │   └── 03_baseline.ipynb       LightGBM baseline, time-aware split, metrics, feature importance
-    ├── features.py                 Shared feature-engineering functions — imported by BOTH the
-    │                                training notebook and predict.py, never duplicated inline
-    └── predict.py                  GitHub Actions inference script (built after 03_baseline proves out)
+    │   ├── 01_eda.ipynb                   Demand trends, seasonality, generation mix shift, missing data
+    │   ├── 02_features.ipynb              Lag features, rolling stats, calendar/seasonality encoding
+    │   ├── 03_baseline.ipynb              LightGBM baseline, time-aware split, metrics, feature importance
+    │   └── 04_era1_ramp_characterization.ipynb   Intra-day ramp magnitude/frequency from study1_hourly
+    │                                              (2019–2022), correlated against share_res_pct — the Era 1 deliverable
+    ├── features.py                        Shared feature-engineering functions
+    └── predict.py                         Outputs the next-day forecast AND the forecast-residual signal
+                                            (actual − predicted, once actual is known) that Phase 4 consumes
 ```
 
 ### Where the data lives
@@ -323,72 +352,86 @@ ML/
 | Generation mix | `gen_coal_mu`, `gen_hydro_mu`, `gen_nuclear_mu`, `gen_res_mu`, `hydro_gen_*_mu`, `wind_gen_*_mu`, `solar_gen_*_mu` | Full range |
 | Shortages | `peak_shortage_*_mw`, `energy_shortage_*_mu` | Full range |
 | Frequency | `freq_fvi`, `freq_pct_below_497` … `freq_pct_above_5005` | Full range |
-| IR-Line corridor flows | 21 `ir_*` cols (export/import/net per corridor) | ~2023 onward |
-| Cross-border exchange | 12 `xb_*` cols (Bhutan/Nepal/Bangladesh/Myanmar) | ~2023 onward |
+| IR-Line corridor flows | 21 `ir_*` cols (export/import/net per corridor) | From 2023-01-01 (verified) |
+| Cross-border exchange | 12 `xb_*` cols (Bhutan/Nepal/Bangladesh/Myanmar) | From 2023-07-06 (verified) |
 | Diversity / RES share | `diversity_regional`, `share_res_pct` | Full range |
 
-70 rows have known irreducible gaps (documented under Phase 0) — forward-fill or exclude, don't blindly interpolate; some are genuine no-data days, not formatting gaps.
+`Dataset/study1_hourly.csv` — used specifically for Era 1 (2019–2022, though the file runs to April 2024):
+
+| Group | Example columns | Notes |
+|-------|-------------|-------|
+| Hourly national + regional demand | `National Hourly Demand`, `Northern/Western/Eastern/Southern/North-Eastern Region Hourly Demand` | The only genuinely hourly signal in this file — everything else is `study1_daily`'s features broadcast across 24 rows |
+
+70 daily rows have known irreducible gaps (documented under Phase 0) — forward-fill or exclude, don't blindly interpolate.
 
 ### Step by step
 
-1. **`01_eda.ipynb`** — plot demand over time, check yearly/weekly/festival seasonality, quantify missingness (especially the pre-2023 `ir_*`/`xb_*` gap), confirm the exact target column.
-2. **`02_features.ipynb` + `features.py`** — build lag features (t−1, t−7, t−365), 7-day/30-day rolling mean/std, calendar features (day-of-week, month, holiday, weekend). Every reusable transform goes into a function in `features.py`, never pasted inline.
-3. **`03_baseline.ipynb`** — time-aware split (2019–2022 train, 2023 val, 2024–2026 test — never shuffle randomly, that leaks future into past). Train LightGBM/XGBoost on the lag features. Compare against a naive persistence baseline (tomorrow = today); if the model can't beat that, something's wrong.
-4. **(Stretch, later)** — LSTM or Temporal Fusion Transformer, only once the LightGBM baseline and its feature importances are understood.
-5. **Metrics** — MAPE, RMSE, MAE on the 2024–2026 test set, plus a feature-importance chart (which generation source / corridor / outage level drives demand most) — feeds a Phase 5 dashboard panel directly.
+1. **`01_eda.ipynb`** — plot demand over time, check yearly/weekly/festival seasonality, quantify missingness, confirm the exact target column.
+2. **`02_features.ipynb` + `features.py`** — lag features (t−1, t−7, t−365), 7-day/30-day rolling mean/std, calendar features. Every reusable transform goes into `features.py`, never pasted inline.
+3. **`03_baseline.ipynb`** — time-aware split (2019–2022 train, 2023 val, 2024–2026 test). Train LightGBM/XGBoost. Compare against naive persistence. Compute and expose the forecast residual as a reusable artifact (needed by Phase 4).
+4. **`04_era1_ramp_characterization.ipynb`** — using `study1_hourly.csv` restricted to 2019–2022: compute hour-to-hour demand deltas per region, define a ramp-magnitude metric, plot its trend over time against `share_res_pct` from `study1_daily`. This is the chart that establishes the project's central motivating claim and feeds Phase 6's introduction.
+5. **(Stretch, later)** — LSTM or Temporal Fusion Transformer for the demand forecast, once the LightGBM baseline and its feature importances are understood.
+6. **Metrics** — MAPE, RMSE, MAE for the forecast; magnitude/frequency trend statistics for the Era 1 ramp analysis.
 
 ### Outputs
 
-- Next-day national + regional peak demand forecast
+- Next-day national + regional demand forecast, plus its residual signal (feeds Phase 4)
+- Era 1 (2019–2022) ramp-characterization trend vs. RES-share growth (feeds Phase 5's "Era 1" dashboard tab and Phase 6's introduction)
 - Feature importance ranking
-- Rolling forecast plots for the dashboard
 
 ### Environment
 
-Google Colab (see "ML Development Environment" above for the full rationale) — notebooks committed to the repo, dataset loaded via the Kaggle API (credentials already set up from the daily CI push), `ML/environment.yml` created first so either collaborator can also run it locally. Model artifact stays gitignored; storage method (Git LFS / GitHub release asset / direct commit if <50MB) to be decided once training is done.
+Google Colab (see "ML Development Environment" above) — notebooks committed to the repo, dataset loaded via the Kaggle API, `ML/environment.yml` created first. Model artifact gitignored; storage method (Git LFS / GitHub release asset / direct commit if <50MB) decided once training is done.
 
 ### Done when
 
-`ML/environment.yml`, `ML/Study1/features.py`, and all three notebooks are committed; the baseline model beats naive persistence on MAPE/RMSE on the 2024–2026 test window; a feature-importance ranking exists. `predict.py` and GitHub Actions wiring can follow after, not required for "Phase 3 complete."
+`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks are committed; the baseline model beats naive persistence on MAPE/RMSE on the 2024–2026 test window; the Era 1 ramp-characterization trend is produced and charted. `predict.py` and GitHub Actions wiring can follow after.
 
 ---
 
-## Phase 4 — Study 2: frequency-violation + ramp-shock classifier 🔲
+## Phase 4 — Study 2: corridor-aware grid-stress early-warning classifier 🔲
 
-**Owner:** TBD — decide whether this goes to the same collaborator after Phase 3, or runs in parallel with a second person.
+**Owner:** TBD — starts after Phase 3 by design (consumes Phase 3's forecast-residual signal; the two collaborators have agreed sequencing is fine).
 
-**Dataset:** `study2_scada.csv` (55,068 rows × 164/165 cols, 96 slots/day, Nov 2024–present)
+**Datasets used:** `study1_daily.csv` for the Era 2 (2023–Oct 2024) daily-resolution pre-check; `study2_scada.csv` (55,068 rows × 164/165 cols, 96 slots/day, Nov 2024–present) for the Era 3 live model.
 
 **Targets (two, sharing most feature engineering):**
-1. Binary — did a frequency violation (Hz outside [49.7, 50.2]) occur in a given 15-min slot?
-2. Binary — was there a "ramp shock" (a sudden, sharp swing in demand or net load between consecutive 15-min slots) in a given slot?
+1. Binary — did a frequency violation (Hz outside [49.7, 50.2]) occur, predicted **1–4 slots (15–60 min) ahead**, not just classified retrospectively.
+2. Binary — was there a "ramp shock" (a sudden, sharp swing in demand or net load between consecutive slots), same lead-time framing.
+
+**Measured 2026-07-09 against the live data:** frequency-violation rate in `study2_scada.csv` is 0.88% (503 of 56,892 rows) — a workable, non-degenerate class balance for both targets.
 
 ### Goal
 
-Predict grid-stress events per 15-minute slot from real-time SCADA generation/demand/transmission data: both the frequency-violation symptom and the ramp-shock (sudden demand/net-load swing) event that typically causes it. These two targets are causally linked — a sudden generation-demand imbalance (ramp shock) is what produces a frequency deviation (violation) — so they're built together on the same dataset rather than as separate studies.
+Answer the Era 2 + Era 3 parts of the central research question: does corridor congestion (`ir_*`) or cross-border exchange (`xb_*`) predict grid stress, first at daily resolution where only daily data has corridor visibility (Era 2), then live at 15-minute resolution with lead time once SCADA data exists (Era 3). The two binary targets are causally linked — a sudden generation-demand imbalance (ramp shock) is what produces a frequency deviation (violation) — so they're modelled together, not as separate studies, and Study 1's forecast-residual becomes an explicit input feature (an unusually large residual is itself a leading indicator of stress).
 
-**Why ramp-shock lives here, not on `study1_hourly`:** the idea of classifying sudden demand swings ("ramp shocks") was originally scoped against the frozen, hourly-only `study1_hourly.csv` (2019–2024). That dataset can't feed a live dashboard and is coarser than what's already available live. `study2_scada` gives 15-minute resolution (catches faster ramps hourly data smooths over) and updates daily from Nov 2024 onward — it's a strict upgrade for this specific target. See the `study1_hourly` decision under Phase 5 for the full reasoning; the historical hourly ramp analysis is retained there as motivating evidence, not as a modelling deliverable.
+**Why this replaced the original `study1_hourly`-based ramp-shock idea:** classifying sudden demand swings was originally scoped against the frozen, hourly-only `study1_hourly.csv` (2019–2024). That dataset can't feed a live dashboard and is coarser than what's available live. `study2_scada` gives 15-minute resolution and updates daily from Nov 2024 onward — a strict upgrade for this target. `study1_hourly`'s ramp signal is retained in Phase 3 (Era 1 analysis) and Phase 5 (dashboard tab) as historical motivating evidence, not as a modelling deliverable.
 
 ### What already exists
 
-Nothing yet — no `ML/Study2/` directory. Starts after (or alongside, if a second collaborator is available) Phase 3, reusing the same repo conventions.
+Nothing yet — no `ML/Study2/` directory.
 
 ### What needs to be built
 
 ```
 ML/Study2/
 ├── notebooks/
-│   ├── 01_eda.ipynb                    Violation + ramp-shock rate by hour/season/gen-mix/corridor stress
-│   ├── 02_features.ipynb               Slot-level + lag-1 features, ramp-magnitude features, class-imbalance handling
-│   ├── 03_violation_baseline.ipynb     LightGBM baseline for the frequency-violation target
-│   └── 04_ramp_shock_baseline.ipynb    LightGBM baseline for the ramp-shock target (shares features.py)
-├── features.py                         Shared feature-engineering functions (same pattern as Study1)
-└── predict.py                          GitHub Actions inference script — outputs both targets
+│   ├── 00_era2_daily_correlation.ipynb   Era 2 (2023–Oct 2024) pre-check on study1_daily: does ir_*/xb_*
+│   │                                      correlate with freq_pct_* stress indicators at daily resolution?
+│   ├── 01_eda.ipynb                      Era 3 SCADA EDA: violation + ramp-shock rate by hour/season/gen-mix/corridor
+│   ├── 02_features.ipynb                 Slot-level + lag-1 features, ramp-magnitude features, Study 1's
+│   │                                      forecast-residual broadcast in as a feature, class-imbalance handling
+│   ├── 03_violation_baseline.ipynb       LightGBM baseline for the lead-time frequency-violation target
+│   └── 04_ramp_shock_baseline.ipynb      LightGBM baseline for the lead-time ramp-shock target (shares features.py)
+├── features.py                           Shared feature-engineering functions (same pattern as Study1)
+└── predict.py                            GitHub Actions inference script — outputs both targets
 ```
 
 ### Where the data lives
 
-`Dataset/study2_scada.csv` — one row per 15-min block:
+`Dataset/study1_daily.csv` (Era 2 pre-check, 2023–Oct 2024 subset): `ir_*` (21 cols), `xb_*` (12 cols), `freq_pct_*` bands.
+
+`Dataset/study2_scada.csv` (Era 3, one row per 15-min block):
 
 | Group | Key columns | Notes |
 |-------|-------------|-------|
@@ -397,28 +440,31 @@ ML/Study2/
 | Demand | `demand_met_mw`, `net_demand_met_mw` | Per slot — ramp-shock label derives from the slot-to-slot delta of these |
 | Net transmission | `net_trans_exchange_mw` | Per slot |
 | Evening peak by region | NR/WR/SR/ER/NER | Broadcast from daily |
-| IR-Line + cross-border | 21 `ir_*` + 12 `xb_*` cols | Broadcast from daily |
+| IR-Line + cross-border | 21 `ir_*` + 12 `xb_*` cols | Broadcast from daily — fully populated for all of `study2_scada`'s Nov 2024–present range (verified 2026-07-09: corridor data has existed since 2023, before SCADA data starts) |
 | Frequency | `freq_hz`, `freq_fvi`, `freq_pct_*` bands | Per slot — used to derive the violation label |
+| Study 1 residual | *(new, produced by Phase 3's `predict.py`)* | Broadcast per day, same pattern as other daily-to-slot broadcasts |
 
 One known bad day (2025-10-02, 63 slots) must be dropped before training; a handful of other days have 95/98 slots (DST/truncation edge cases) — handle explicitly, don't silently drop or pad.
 
 ### Step by step
 
-1. Define the violation label from `freq_hz` against the 49.7–50.2 Hz nominal band (NLDC grid code).
-2. Define the ramp-shock label: a threshold on the slot-to-slot change in `demand_met_mw`/`net_demand_met_mw` (e.g. top percentile of |Δ| over a rolling window) — pick the threshold empirically during EDA, not arbitrarily.
-3. **`01_eda.ipynb`** — both event rates by hour, season, generation mix, corridor stress; check how ramp-shock frequency correlates with rising `share_res_pct` over time (this is the evidence that ties back to the paper's RE-integration motivation).
-4. **`02_features.ipynb` + `features.py`** — slot-level + lag-1-slot features, ramp-magnitude features; address class imbalance for both targets (SMOTE or class-weighted loss — both are rare events).
-5. **`03_violation_baseline.ipynb`** — time-aware split: 2024-11→2025-06 train, 2025-07→2025-12 val, 2026 test. LightGBM baseline.
-6. **`04_ramp_shock_baseline.ipynb`** — same split, same feature pipeline, LightGBM baseline for the ramp-shock target.
-7. **(Stretch)** — temporal CNN or LSTM over the 96-slot daily window, for either or both targets.
-8. **Metrics** — PR-AUC, recall at 95% precision, F1 for both targets (accuracy is meaningless given class imbalance).
+1. **`00_era2_daily_correlation.ipynb`** — on `study1_daily.csv` restricted to 2023–Oct 2024, test whether `ir_*`/`xb_*` levels correlate with `freq_pct_*` stress indicators at daily resolution. This is a real analysis, not a placeholder — its findings inform which corridor/cross-border features matter most for Era 3's feature engineering.
+2. Define the violation label from `freq_hz` against the 49.7–50.2 Hz nominal band (NLDC grid code), shifted to a 1–4-slot lead-time target.
+3. Define the ramp-shock label: a threshold on the slot-to-slot change in `demand_met_mw`/`net_demand_met_mw`, same lead-time shift.
+4. **`01_eda.ipynb`** — both event rates by hour, season, generation mix, corridor stress in the live SCADA data.
+5. **`02_features.ipynb` + `features.py`** — slot-level + lag-1-slot features, ramp-magnitude features, Study 1's forecast-residual as an input feature; address class imbalance (SMOTE or class-weighted loss — both targets are rare events, ~0.88% base rate for violations).
+6. **`03_violation_baseline.ipynb`** — time-aware split: 2024-11→2025-06 train, 2025-07→2025-12 val, 2026 test. LightGBM baseline.
+7. **`04_ramp_shock_baseline.ipynb`** — same split, same feature pipeline, LightGBM baseline.
+8. **(Stretch)** — temporal CNN or LSTM over the 96-slot daily window.
+9. **Metrics** — PR-AUC, recall at 95% precision, F1 for both targets.
 
 ### Outputs
 
-- 15-min-ahead frequency-violation probability
-- 15-min-ahead ramp-shock probability
-- Feature importance: which generation source / corridor imbalance is most predictive of each
-- Risk heatmap: time-of-day × day-of-week event frequency, for both targets (dashboard panel)
+- Era 2 daily-resolution corridor/cross-border-vs-stress correlation findings
+- 15–60-min-ahead frequency-violation probability
+- 15–60-min-ahead ramp-shock probability
+- Feature importance: which corridor / cross-border level / forecast-residual is most predictive of each
+- Risk heatmap: time-of-day × day-of-week event frequency (dashboard panel)
 - Threshold analysis: precision-recall curve, for both targets
 
 ### Environment
@@ -431,17 +477,15 @@ Same as Phase 3 — Google Colab, `ML/environment.yml`, dataset via Kaggle API.
 
 **Vision:** public GitHub Pages site combining live data feed + model inference + historical explorer.
 
-### Decision: `study1_hourly.csv` scope (2026-07-09)
+### The Historical Explorer mirrors the three-era research design (2026-07-09)
 
-**Not modelled — historical-explorer tab only.** Two reasons:
+Rather than one undifferentiated set of time-series charts, the Historical Explorer is structured around the same three eras used in Phases 3/4/6 — each tab uses the dataset that actually covers it, and each is a real analytical output from those phases, not raw unprocessed charting:
 
-1. **It's frozen.** `study1_hourly` stops at April 2024 because it's built by joining `study1_daily` onto a static Kaggle dataset that itself stopped updating (see [Dataset/README.md](Dataset/README.md)). A model trained on it can never be validated against new data and can't feed the "live" half of this dashboard's value proposition.
-2. **Its unique signal is already superseded.** The only genuinely hourly information in that file is the 6 hourly-demand columns; everything else is the daily feature set broadcast across 24 rows. `study2_scada.csv` already provides demand at **15-minute** resolution — finer than hourly — and is **live**, updating daily from Nov 2024 onward. The ramp-shock classifier idea originally scoped against this dataset moved to Phase 4 (`study2_scada`) for exactly this reason.
+- **Era 1 tab (2019–2022, non-live):** intra-day ramp magnitude/frequency trend vs. rising `share_res_pct`, from Phase 3's `04_era1_ramp_characterization.ipynb`. Source: `study1_hourly.csv`. Framed explicitly as motivating evidence for the live Phase 4 classifier, not a prediction of its own.
+- **Era 2 tab (2023–Oct 2024, non-live):** daily-resolution corridor/cross-border-vs-stress correlation, from Phase 4's `00_era2_daily_correlation.ipynb`. Source: `study1_daily.csv`.
+- **Era 3 (live, this is the "Study 2 risk" panel below, not a Historical Explorer tab):** today's live corridor-aware risk timeline. Source: `study2_scada.csv`.
 
-`study1_hourly` therefore appears **only** as a dedicated **"Ramp-shock history" tab** inside the Historical Explorer panel — a static, clearly-labeled-as-non-live (2019–2024) view showing:
-- Historical ramp-shock frequency/magnitude over time (same threshold-based definition used in Phase 4, applied retroactively to hourly deltas)
-- Correlation with rising `share_res_pct` — this is the chart that visually makes the paper's RE-integration argument ("ramp shocks became more frequent as renewable share grew")
-- Framed explicitly as **motivating evidence** for the live Phase 4 ramp-shock classifier, not as a prediction of its own
+This means all three CSVs appear in the dashboard for the era each one actually covers — `study1_hourly` and the Era 2 daily subset are never presented as live or current, only as historical, clearly dated evidence.
 
 ### Panels
 
@@ -449,9 +493,10 @@ Same as Phase 3 — Google Colab, `ML/environment.yml`, dataset via Kaggle API.
 |-------|-------------|-------------|
 | **Live grid status** | Today's key metrics (peak demand, generation mix, frequency stats) as they arrive | `study1_daily.csv` latest row |
 | **Study 1 forecast** | Next-day demand forecast (national + regional) with confidence interval | Study 1 model output |
-| **Study 2 risk** | Today's 96-slot frequency-violation + ramp-shock risk timeline | Study 2 model output on today's SCADA |
+| **Study 2 risk** | Today's 96-slot corridor-aware frequency-violation + ramp-shock risk timeline (Era 3, live) | Study 2 model output on today's SCADA |
 | **Historical explorer** | Interactive time-series charts: demand trends, generation mix, IR-line flows, cross-border exchange | Full `study1_daily.csv` |
-| ↳ *Ramp-shock history* (tab within Historical explorer) | Historical ramp-shock frequency 2019–2024 vs. rising RES share — motivating evidence, non-live | `study1_hourly.csv` |
+| ↳ *Era 1: Ramp-shock history* (tab) | Intra-day ramp trend 2019–2022 vs. rising RES share — motivating evidence, non-live | `study1_hourly.csv` |
+| ↳ *Era 2: Corridor-stress correlation* (tab) | Daily-resolution corridor/cross-border vs. frequency-stress correlation, 2023–Oct 2024, non-live | `study1_daily.csv` (2023+ subset) |
 | **Anomaly log** | Days where actual demand deviated >X% from forecast, or violation/ramp-shock rate was elevated | Derived |
 
 ### What already exists
@@ -512,29 +557,45 @@ Publish the dataset methodology and/or the two studies' modelling results, if re
 
 Nothing — no draft, no venue chosen, no writing environment set up. This phase can't meaningfully start until Phase 3/4 produce results to write about.
 
+### Central claim
+
+Using a novel, openly-published, multi-granularity NLDC dataset (7 years, three complementary resolutions), this project traces how the observability and predictability of grid stress in India has evolved as both monitoring granularity and renewable penetration increased — and shows, for the first time (per the novelty check below), that inter-regional corridor congestion and cross-border exchange have measurable predictive value for short-term grid stress once that visibility exists in the data (2023 onward).
+
 ### Where the material will come from
 
-- Results, metrics, feature-importance charts: Phase 3 (`ML/Study1/notebooks/03_baseline.ipynb`) and Phase 4 (`ML/Study2/notebooks/03_violation_baseline.ipynb` + `04_ramp_shock_baseline.ipynb`)
+- Era 1 evidence: Phase 3's `04_era1_ramp_characterization.ipynb` (`study1_hourly.csv`, 2019–2022)
+- Era 2 evidence: Phase 4's `00_era2_daily_correlation.ipynb` (`study1_daily.csv`, 2023–Oct 2024)
+- Era 3 results: Phase 4's `03_violation_baseline.ipynb` + `04_ramp_shock_baseline.ipynb` (`study2_scada.csv`, Nov 2024–present), informed by Phase 3's forecast-residual signal
 - Dataset methodology section: this roadmap's Phase 0 (parser fixes, spot-check log) and Phase 1 (validation gate, data dictionary) sections, plus `Dataset/README.md`
-- Grid-stress / feature-importance narrative: derived from both studies' feature-importance rankings
-- RE-integration motivation evidence: the historical ramp-shock analysis on `study1_hourly` (2019–2024, see Phase 5's "Ramp-shock history" tab) — shows ramp shocks becoming more frequent as `share_res_pct` rises, motivating why the live Phase 4 ramp-shock classifier matters
+- Feature-importance / corridor-specific narrative: derived from Phase 4's per-corridor, per-country feature-importance rankings
+
+### Related work / prior art (verified via web search, 2026-07-09 — starting point for the literature review, re-verify before submission since this is a fast-moving area)
+
+| Claim | Status | Source |
+|---|---|---|
+| Corridor congestion predicts frequency stability | Done for European grids, not India | [Revealing drivers and risks for power grid frequency stability with explainable AI](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8600233/); [Identifying drivers and mitigators for congestion in the German grid with XAI](https://www.sciencedirect.com/science/article/pii/S0306261923017154) |
+| Cross-border exchange helps grid stability, India-specific | Only qualitative/policy evidence found (the April 2020 "9pm9minute" event), no quantitative model | [Cross-Border Electricity Cooperation in Southern Asia](https://www.mdpi.com/2227-9717/12/11/2324) |
+| Rising RES share is stressing India's grid | Macro-level claim already made, very recently | [India's rising solar penetration is causing power grid stress: EAC-PM paper](https://www.business-standard.com/industry/news/india-s-rising-solar-penetration-is-causing-power-grid-stress-eac-pm-paper-126070701352_1.html) (reported 2026-07-07) |
+| Multi-resolution / evolving-observability grid datasets | Exists in different form (PSML benchmark, Smart5Grid) — not this three-era, single-country design | [PSML multi-scale dataset](https://www.nature.com/articles/s41597-022-01455-7); [Smart5Grid observability](https://pmc.ncbi.nlm.nih.gov/articles/PMC10521069/) |
+| India + frequency violation + ramp event + corridor congestion + ML (combined) | No matching paper found | Targeted search, 2026-07-09 — appears genuinely open |
+| Plain gradient-boosting demand forecasting | Heavily saturated globally, including India-specific | [MANIT Bhopal-style India load forecasting work](https://www.frontiersin.org/journals/energy-research/articles/10.3389/fenrg.2024.1408119/full) — this is why Study 1's forecast is positioned as infrastructure, not a novelty claim |
 
 ### If yes, target venues
 
-- IEEE NPSC (National Power Systems Conference) — India-focused, good fit
-- *Electric Power Systems Research* (Elsevier) — broader journal
-- IEEE Transactions on Power Systems — higher bar, stronger results needed
+- IEEE NPSC (National Power Systems Conference) — India-focused, good fit for an applied/regional contribution
+- *Electric Power Systems Research* (Elsevier) — broader journal, viable if Era 2/3 results are strong
+- IEEE Transactions on Power Systems — higher bar; only pursue if results substantially exceed baseline expectations, since the underlying techniques (LightGBM, SHAP-style feature importance) are not themselves novel
 
 ### Paper structure (draft)
 
-1. Introduction: why Indian grid forecasting matters (RE integration, frequency instability); motivate with the historical `study1_hourly` ramp-shock evidence (2019–2024 trend vs. rising RES share)
-2. Dataset: novel contribution — NLDC PSP reports scraped 2019–present, methodology, gaps
-3. Study 1: demand forecasting — features, model, results vs baseline
-4. Study 2: frequency-violation + ramp-shock classifier — features, models, results, real-time applicability
-5. Discussion: feature importance findings, grid stress patterns, how the historical ramp-shock trend connects to the live classifier's results
+1. Introduction: why Indian grid forecasting matters (RE integration, frequency instability); state the central research question; motivate with Era 1's `study1_hourly` ramp-shock evidence (2019–2022 trend vs. rising RES share) and explicitly position relative to the EAC-PM finding (complements it with granular ML evidence, doesn't claim to discover the phenomenon)
+2. Dataset: novel contribution — NLDC PSP reports scraped 2019–present, three complementary resolutions, methodology, gaps, verified corridor/cross-border onset dates
+3. Era 2: daily-resolution corridor/cross-border-vs-stress correlation (2023–Oct 2024) — first quantitative pass before live modelling
+4. Era 3: live corridor-aware, forecast-residual-informed, lead-time frequency-violation + ramp-shock classifier — features, models, results, real-time applicability
+5. Discussion: which corridors / which cross-border partners are most predictive; how Era 1→2→3 evidence connects; comparison against the related work above
 6. Conclusion + future work (e.g. state-level study, sequence models over the 96-slot window)
 
-Dataset itself (NLDC PSP scraped + parsed, 7 years, multi-study) is a secondary publishable contribution regardless of model results.
+Dataset itself (NLDC PSP scraped + parsed, 7 years, three-resolution) is a secondary publishable contribution regardless of model results.
 
 ### Environment
 
