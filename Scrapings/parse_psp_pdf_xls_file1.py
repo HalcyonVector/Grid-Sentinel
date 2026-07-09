@@ -41,6 +41,15 @@ import pandas as pd
 REGIONS = ["NR", "WR", "SR", "ER", "NER"]
 COUNTRIES = ["bhutan", "nepal", "bangladesh"]
 
+# Earliest date this dataset is documented to cover (see ROADMAP.md). A few
+# older PDFs (pre-2021 template, no subject line) have a typo'd year in their
+# own "Date of Reporting" field -- e.g. 15.08.20_NLDC_PSP.pdf literally prints
+# "15-Aug-14" -- which the parser has no way to detect from that file alone
+# (no subject line to cross-check against). Rows dated before this are source
+# typos, not real data, and are dropped in build_dataset() rather than shipped
+# as bogus all-null rows.
+MIN_VALID_DATE = datetime(2018, 12, 1).date()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Helpers
@@ -374,6 +383,67 @@ def _pdf_diversity(tables):
     return result
 
 
+def _pdf_gen_outage_text_fallback(pdf):
+    """
+    Last-resort fallback for Section F (Generation Outage) / Section G
+    (Sourcewise generation) when pdfplumber's extract_tables() misses them
+    entirely -- observed on 2021-era PDFs where these sections render with
+    no visible gridlines, so no table is detected at all, even though
+    extract_text() still returns the section as normal whitespace-delimited
+    rows. Also recovers cases where a table IS detected but the "All India"
+    header cell renders as a stray non-text value such as "0" (observed on
+    some 2019 PDFs -- e.g. 29/30.03.19), since this works from extract_text()
+    directly, bypassing table detection's column-header matching altogether.
+
+    Row labels vary in whether they retain internal spaces across report eras
+    (e.g. "Gas, Naptha & Diesel" vs "Gas,Naptha&Diesel"), so labels are matched
+    by stripping everything but letters; data columns are matched positionally
+    from the numbers found on the line, since a trailing %Share column is
+    present in some report eras and absent in others.
+    """
+    result = {}
+    full_text = "\n".join((p.extract_text() or "") for p in pdf.pages)
+    lines = full_text.split("\n")
+
+    def _letters_only(s):
+        return re.sub(r"[^a-z]", "", s.lower())
+
+    outage_map = {"centralsector": "outage_central", "statesector": "outage_state", "total": "outage_total"}
+    gen_map = {
+        "coal": "gen_coal_mu", "lignite": "gen_lignite_mu", "hydro": "gen_hydro_mu",
+        "nuclear": "gen_nuclear_mu", "gas": "gen_gas_mu", "res": "gen_res_mu",
+        "total": "gen_total_mu",
+    }
+
+    f_idx = next((i for i, l in enumerate(lines) if _letters_only(l).startswith("fgenerationoutage")), None)
+    if f_idx is not None:
+        for line in lines[f_idx + 1: f_idx + 6]:
+            label = _letters_only(line)
+            prefix = next((v for k, v in outage_map.items() if label.startswith(k)), None)
+            if prefix is None:
+                continue
+            nums = re.findall(r"-?\d+\.?\d*", line)
+            if len(nums) < 6:
+                continue
+            for region, val in zip(REGIONS + ["total"], nums[:6]):
+                key = region.lower() if region != "total" else "total"
+                result.setdefault(f"{prefix}_{key}_mw", float(val))
+
+    g_idx = next((i for i, l in enumerate(lines) if _letters_only(l).startswith("gsourcewisegeneration")), None)
+    if g_idx is not None:
+        for line in lines[g_idx + 1: g_idx + 9]:
+            label = _letters_only(line)
+            col_name = next((v for k, v in gen_map.items() if label.startswith(k)), None)
+            if col_name is None:
+                continue
+            nums = re.findall(r"-?\d+\.?\d*", line)
+            if len(nums) < 6:
+                continue
+            result.setdefault(col_name, float(nums[5]))
+
+    return result
+
+
 def parse_pdf(filepath):
     """Parse a single PSP PDF -> dict of daily features."""
     import pdfplumber
@@ -406,6 +476,15 @@ def parse_pdf(filepath):
                 for _k, _v in _fn(all_tables).items():
                     if row.get(_k) is None:
                         row[_k] = _v
+
+        # Text-based last resort: some PDFs never produce a detected table for
+        # Section F/G at all (2021-era, no visible gridlines), or produce one
+        # with a corrupted "All India" header cell (some 2019-era files) --
+        # both bypass the table-based parsers above entirely.
+        if row.get("gen_coal_mu") is None or row.get("outage_total_total_mw") is None:
+            for _k, _v in _pdf_gen_outage_text_fallback(pdf).items():
+                if row.get(_k) is None:
+                    row[_k] = _v
 
     return row
 
@@ -856,6 +935,17 @@ def build_dataset(input_path, output_csv):
         return pd.DataFrame()
 
     df = pd.DataFrame(rows)
+
+    # Drop rows with an implausibly early date -- these are source-level
+    # typos in the raw PDF's own date field (see MIN_VALID_DATE), not real
+    # data. Only affects PDFs old enough to lack a subject line to cross-check.
+    if "date" in df.columns:
+        bad_date_mask = df["date"] < MIN_VALID_DATE
+        if bad_date_mask.any():
+            bad_dates = sorted(df.loc[bad_date_mask, "date"].astype(str).tolist())
+            print(f"Dropped {bad_date_mask.sum()} row(s) with implausible date (source typo): {bad_dates}")
+            df = df.loc[~bad_date_mask].reset_index(drop=True)
+
     # Dedup: a date may appear twice (PDF + XLS for the same day, or era
     # overlap). Keep the richest row (most non-null fields).
     if "date" in df.columns and df["date"].duplicated().any():

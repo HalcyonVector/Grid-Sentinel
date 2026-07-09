@@ -1,6 +1,6 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-09 (Phase 2-6 detailed with goals/data-locations/steps/environment; hourly-dataset scope decided)_
+_Last updated: 2026-07-10 (Phase 2 merged-blob fix implemented and verified; 2014 bogus-date bug found and fixed)_
 
 ---
 
@@ -113,9 +113,9 @@ Everything here is done and verified. Datasets are as clean as the source data a
 
 Treat with forward-fill or time-series-aware imputation at model time.
 
-### Residual parser gap (~0.5%)
+### Residual parser gap ✅ CLOSED (2026-07-10)
 
-**Measured 2026-07-09** (superseding the earlier "~27" prose estimate, which wasn't cross-checked against the live CSV): **12 rows**, not 27, still miss `gen_*`/`outage_*` because those PDF sections render as one merged-text blob with no column grid. Demand, energy, max-demand, frequency, diversity and RES-share **are** recovered — confirmed by requiring at least one of `energy_met_total_mu`/`freq_fvi`/`diversity_regional` to be populated on every affected row. Closing this needs a text-regex fallback — deferred to Phase 2.
+**Originally measured 2026-07-09** as 12 rows (2019–2022) missing `gen_*`/`outage_*`. Root cause turned out to be two distinct bugs, not one "merged-text blob" as first assumed — see Phase 2 below for the fix. All 12 rows now have `gen_*`/`outage_*` fully populated, verified against the raw PDF text by hand.
 
 | Date | Year |
 |------|------|
@@ -180,46 +180,45 @@ Three CSVs auto-pushed to Kaggle on every daily update via GitHub Actions (`kagg
 
 ---
 
-## Phase 2 — Coverage expansion 🔲
+## Phase 2 — Coverage expansion 🔶 PARTIALLY COMPLETE (2026-07-10)
 
 **Owner:** Sagnik — this is scraper/parser work, same skillset as Phase 0/1, not delegated.
 
-| Task | Priority |
-|------|----------|
-| Text-regex fallback for generation/outage on 12 merged-blob PDFs (last ~0.5% of rows) | Medium |
-| §C state-level table → `study3_states.csv` (~40 state entities, daily) — optional separate study | Low |
-| Backfill 2025-05-22/23 if NLDC re-publishes | Low |
+| Task | Priority | Status |
+|------|----------|--------|
+| Text-regex fallback for generation/outage on 12 merged-blob PDFs (last ~0.5% of rows) | Medium | ✅ Done |
+| §C state-level table → `study3_states.csv` (~40 state entities, daily) — optional separate study | Low | 🔲 Not started |
+| Backfill 2025-05-22/23 if NLDC re-publishes | Low | 🔲 Blocked on NLDC (not actionable by us) |
 
-### Goal
+### What was actually wrong (found by inspecting raw PDFs directly, 2026-07-10)
 
-Close the last ~1% gap in `study1_daily.csv` / `study1_hourly.csv` where generation/outage/inter-regional/cross-border fields are null because the source PDF rendered that section as an unstructured text blob instead of a table. Optionally add a third dataset for state-level demand.
+The original "merged-text blob with no column grid" theory was wrong. Two distinct, unrelated bugs were found instead:
 
-### What already exists
+1. **Some 2019 PDFs (e.g. 29/30.03.19) DO have a well-structured Section G table** — `pdfplumber.extract_tables()` detects it fine — but the "All India" header cell renders as a stray `'0'` character. The parser's `_pdf_generation()` only matched by searching the header text for "all india", so it silently skipped an otherwise-perfectly-good table.
+2. **Some 2021 PDFs never produce a detected table for Section F/G at all** (no visible gridlines in that part of the page), even though `extract_text()` returns the section as normal, cleanly whitespace-delimited rows.
 
-- `Scrapings/parse_psp_pdf_xls_file1.py` and `parse_psp_pdf_xls_file2.py` already parse the structured-table case correctly — this is why demand, energy, max-demand, frequency, diversity, and RES-share still come through clean on the affected rows. Only the free-text-rendered generation/outage/IR/cross-border sections fail.
-- The 12 affected dates (2019–2022) are now measured and listed in the "Residual parser gap" table above — no need to re-derive this list when Phase 2 work starts.
+### What was built
 
-### What needs to be built
+A single new function, `_pdf_gen_outage_text_fallback()`, added to both `Scrapings/parse_psp_pdf_xls_file1.py` and `parse_psp_pdf_xls_file2.py` (the two files are byte-identical, so both got the same edit). It works directly on `extract_text()` output — bypassing `extract_tables()`'s column-header matching entirely — and matches row labels by stripping everything but letters (handles labels that gain/lose internal spaces across report eras, e.g. "Gas, Naptha & Diesel" vs "Gas,Naptha&Diesel"), then pulls data columns *positionally* from the numbers found on each line, since a trailing %Share column exists in some report eras and not others. Wired into `parse_pdf()` as a last resort, only filling keys still missing after the existing table-based passes — never overwrites a correctly-parsed value.
 
-1. A regex-based text fallback, scoped to the generation/outage/IR-line/cross-border section only, that fires when the structured-table parse comes back empty for that section on a given file.
-2. *(Optional, low priority)* A new parser for NLDC PSP §C (state-level table) → `Dataset/study3_states.csv`, a new step wired into `build_all.py`, and new checks added to `validate.py`.
+**Bonus fix, found along the way:** rebuilding surfaced two new all-null rows dated 2014-08-14/17 that hadn't existed in the previously-committed dataset. Root cause: `15.08.20_NLDC_PSP.pdf` and `18.08.20_NLDC_PSP.pdf` are old enough to lack a subject line, so the parser falls back to the PDF's own "Date of Reporting" field — which itself has a genuine NLDC-side typo, literally printing "15-Aug-**14**" instead of "15-Aug-**20**". Added a `MIN_VALID_DATE` guard (2018-12-01, the dataset's documented start) in `build_dataset()` that drops any row dated earlier and logs what it dropped, since such a date can only be a source/parse artifact.
 
-### Where the data/code lives
+### Verification (2026-07-10)
 
-- Raw PDFs: `Dataset/Raw/File1_Raw/`, `Dataset/Raw/File2_Raw/`
-- Parsers to extend: `Scrapings/parse_psp_pdf_xls_file1.py`, `Scrapings/parse_psp_pdf_xls_file2.py`
+- All 12 originally-affected dates confirmed populated (`gen_total_mu`, `outage_total_total_mw`, and individual `gen_coal_mu` etc.), cross-checked by hand against raw PDF text for 3 dates.
+- The 2 bogus 2014 rows confirmed dropped; `study1_daily`'s date range is back to the documented 2018-12-31 start.
+- `Pipeline/validate.py`: all `study1_daily`/`study1_hourly` checks pass (2 pre-existing WARNs on `xb_net` identity, unrelated). The only FAIL is the already-documented, unrelated `study2_scada` 2025-10-02 63-slot day (File3/XLS parser, untouched by this work).
+
+### Still open (both low priority, unchanged from original scope)
+
+1. §C state-level table → `study3_states.csv` — a genuinely separate mini-project (new parser section, new output CSV, new `build_all.py` step, new `validate.py` checks), not started.
+2. 2025-05-22/23 backfill — not actionable until/unless NLDC re-publishes those dates on their own end.
+
+### Where the code lives
+
+- Parsers: `Scrapings/parse_psp_pdf_xls_file1.py`, `parse_psp_pdf_xls_file2.py` (identical files, both patched)
 - Pipeline entry point: `Pipeline/build_all.py`
 - Validation: `Pipeline/validate.py`
-
-### Step by step
-
-1. ✅ **Done (2026-07-09)** — exact list of affected dates pulled: rows in `study1_daily.csv` where `gen_*`/`outage_*` are null but at least one of `energy_met_total_mu`/`freq_fvi`/`diversity_regional` is populated, filtered to pre-2024 rows. Result: 12 dates, listed in "Residual parser gap" above.
-2. For 2–3 of those PDFs, dump the raw extracted text and identify the actual merged-blob pattern (e.g. "Coal 1234 Hydro 567 Nuclear 89" with no delimiters) to design the regex against.
-3. Write the fallback function, gated so it only runs when the structured parser returns nothing for that section — it must never silently override a correct structured parse.
-4. Rebuild the affected years only, e.g. `python Pipeline/build_all.py --skip-file3 --skip-hourly` (target File1/File2 only).
-5. Run `python Pipeline/validate.py` — row/col counts must stay unchanged; only null counts should drop.
-6. Manually spot-check 3–5 recovered rows against the source PDF by eye, same method as the Phase 0 spot-check log.
-7. If also doing the state-level table: repeat this loop end-to-end for a new `study3_states.csv`, added as a new step in `build_all.py`.
 
 ### Environment
 
