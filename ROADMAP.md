@@ -353,17 +353,21 @@ Google Colab (see "ML Development Environment" above for the full rationale) —
 
 ---
 
-## Phase 4 — Study 2: 15-min frequency-violation classifier 🔲
+## Phase 4 — Study 2: frequency-violation + ramp-shock classifier 🔲
 
 **Owner:** TBD — decide whether this goes to the same collaborator after Phase 3, or runs in parallel with a second person.
 
 **Dataset:** `study2_scada.csv` (55,068 rows × 164/165 cols, 96 slots/day, Nov 2024–present)
 
-**Target:** binary — did a frequency violation (Hz outside [49.7, 50.2]) occur in a given 15-min slot?
+**Targets (two, sharing most feature engineering):**
+1. Binary — did a frequency violation (Hz outside [49.7, 50.2]) occur in a given 15-min slot?
+2. Binary — was there a "ramp shock" (a sudden, sharp swing in demand or net load between consecutive 15-min slots) in a given slot?
 
 ### Goal
 
-Predict frequency-violation risk per 15-minute slot from real-time SCADA generation/demand/transmission data. Also the natural home for any future intra-day demand-curve modelling (see the `study1_hourly` scope decision under Phase 5) — this dataset has finer, live granularity than `study1_hourly` ever will.
+Predict grid-stress events per 15-minute slot from real-time SCADA generation/demand/transmission data: both the frequency-violation symptom and the ramp-shock (sudden demand/net-load swing) event that typically causes it. These two targets are causally linked — a sudden generation-demand imbalance (ramp shock) is what produces a frequency deviation (violation) — so they're built together on the same dataset rather than as separate studies.
+
+**Why ramp-shock lives here, not on `study1_hourly`:** the idea of classifying sudden demand swings ("ramp shocks") was originally scoped against the frozen, hourly-only `study1_hourly.csv` (2019–2024). That dataset can't feed a live dashboard and is coarser than what's already available live. `study2_scada` gives 15-minute resolution (catches faster ramps hourly data smooths over) and updates daily from Nov 2024 onward — it's a strict upgrade for this specific target. See the `study1_hourly` decision under Phase 5 for the full reasoning; the historical hourly ramp analysis is retained there as motivating evidence, not as a modelling deliverable.
 
 ### What already exists
 
@@ -374,11 +378,12 @@ Nothing yet — no `ML/Study2/` directory. Starts after (or alongside, if a seco
 ```
 ML/Study2/
 ├── notebooks/
-│   ├── 01_eda.ipynb            Violation rate by hour/season/generation mix/corridor stress
-│   ├── 02_features.ipynb       Slot-level + lag-1 features, class-imbalance handling
-│   └── 03_baseline.ipynb       LightGBM baseline, time-aware split, PR-AUC/recall/F1
-├── features.py                 Shared feature-engineering functions (same pattern as Study1)
-└── predict.py                  GitHub Actions inference script
+│   ├── 01_eda.ipynb                    Violation + ramp-shock rate by hour/season/gen-mix/corridor stress
+│   ├── 02_features.ipynb               Slot-level + lag-1 features, ramp-magnitude features, class-imbalance handling
+│   ├── 03_violation_baseline.ipynb     LightGBM baseline for the frequency-violation target
+│   └── 04_ramp_shock_baseline.ipynb    LightGBM baseline for the ramp-shock target (shares features.py)
+├── features.py                         Shared feature-engineering functions (same pattern as Study1)
+└── predict.py                          GitHub Actions inference script — outputs both targets
 ```
 
 ### Where the data lives
@@ -389,29 +394,32 @@ ML/Study2/
 |-------|-------------|-------|
 | Timestamp | `date`, `time`, `hhmm` | |
 | Real-time generation mix | `nuclear_mw`, `wind_mw`, `solar_mw`, `hydro_mw`, `gas_mw`, `thermal_mw`, `total_gen_mw` | Per 15-min slot |
-| Demand | `demand_met_mw`, `net_demand_met_mw` | Per slot |
+| Demand | `demand_met_mw`, `net_demand_met_mw` | Per slot — ramp-shock label derives from the slot-to-slot delta of these |
 | Net transmission | `net_trans_exchange_mw` | Per slot |
 | Evening peak by region | NR/WR/SR/ER/NER | Broadcast from daily |
 | IR-Line + cross-border | 21 `ir_*` + 12 `xb_*` cols | Broadcast from daily |
-| Frequency | `freq_hz`, `freq_fvi`, `freq_pct_*` bands | Per slot — used to derive the label |
+| Frequency | `freq_hz`, `freq_fvi`, `freq_pct_*` bands | Per slot — used to derive the violation label |
 
 One known bad day (2025-10-02, 63 slots) must be dropped before training; a handful of other days have 95/98 slots (DST/truncation edge cases) — handle explicitly, don't silently drop or pad.
 
 ### Step by step
 
 1. Define the violation label from `freq_hz` against the 49.7–50.2 Hz nominal band (NLDC grid code).
-2. **`01_eda.ipynb`** — violation rate by hour, season, generation mix, corridor stress.
-3. **`02_features.ipynb` + `features.py`** — slot-level + lag-1-slot features; address class imbalance (SMOTE or class-weighted loss — violations are rare events).
-4. **`03_baseline.ipynb`** — time-aware split: 2024-11→2025-06 train, 2025-07→2025-12 val, 2026 test. LightGBM baseline first.
-5. **(Stretch)** — temporal CNN or LSTM over the 96-slot daily window.
-6. **Metrics** — PR-AUC, recall at 95% precision, F1 (accuracy is meaningless here given class imbalance).
+2. Define the ramp-shock label: a threshold on the slot-to-slot change in `demand_met_mw`/`net_demand_met_mw` (e.g. top percentile of |Δ| over a rolling window) — pick the threshold empirically during EDA, not arbitrarily.
+3. **`01_eda.ipynb`** — both event rates by hour, season, generation mix, corridor stress; check how ramp-shock frequency correlates with rising `share_res_pct` over time (this is the evidence that ties back to the paper's RE-integration motivation).
+4. **`02_features.ipynb` + `features.py`** — slot-level + lag-1-slot features, ramp-magnitude features; address class imbalance for both targets (SMOTE or class-weighted loss — both are rare events).
+5. **`03_violation_baseline.ipynb`** — time-aware split: 2024-11→2025-06 train, 2025-07→2025-12 val, 2026 test. LightGBM baseline.
+6. **`04_ramp_shock_baseline.ipynb`** — same split, same feature pipeline, LightGBM baseline for the ramp-shock target.
+7. **(Stretch)** — temporal CNN or LSTM over the 96-slot daily window, for either or both targets.
+8. **Metrics** — PR-AUC, recall at 95% precision, F1 for both targets (accuracy is meaningless given class imbalance).
 
 ### Outputs
 
 - 15-min-ahead frequency-violation probability
-- Feature importance: which generation source / corridor imbalance is most predictive
-- Risk heatmap: time-of-day × day-of-week violation frequency (dashboard panel)
-- Threshold analysis: precision-recall curve
+- 15-min-ahead ramp-shock probability
+- Feature importance: which generation source / corridor imbalance is most predictive of each
+- Risk heatmap: time-of-day × day-of-week event frequency, for both targets (dashboard panel)
+- Threshold analysis: precision-recall curve, for both targets
 
 ### Environment
 
@@ -425,12 +433,15 @@ Same as Phase 3 — Google Colab, `ML/environment.yml`, dataset via Kaggle API.
 
 ### Decision: `study1_hourly.csv` scope (2026-07-09)
 
-**Not modelled — historical-explorer chart only.** Two reasons:
+**Not modelled — historical-explorer tab only.** Two reasons:
 
 1. **It's frozen.** `study1_hourly` stops at April 2024 because it's built by joining `study1_daily` onto a static Kaggle dataset that itself stopped updating (see [Dataset/README.md](Dataset/README.md)). A model trained on it can never be validated against new data and can't feed the "live" half of this dashboard's value proposition.
-2. **Its unique signal is already superseded.** The only genuinely hourly information in that file is the 6 hourly-demand columns; everything else is the daily feature set broadcast across 24 rows. `study2_scada.csv` already provides demand at **15-minute** resolution — finer than hourly — and is **live**, updating daily from Nov 2024 onward. If intra-day demand-curve modelling is wanted later, it belongs as an extension of Phase 4 on `study2_scada`, not as new modelling scope on a dead dataset.
+2. **Its unique signal is already superseded.** The only genuinely hourly information in that file is the 6 hourly-demand columns; everything else is the daily feature set broadcast across 24 rows. `study2_scada.csv` already provides demand at **15-minute** resolution — finer than hourly — and is **live**, updating daily from Nov 2024 onward. The ramp-shock classifier idea originally scoped against this dataset moved to Phase 4 (`study2_scada`) for exactly this reason.
 
-`study1_hourly` therefore appears in the Historical Explorer panel only (2019–2024 window, explicitly labeled as non-live), never as a model input.
+`study1_hourly` therefore appears **only** as a dedicated **"Ramp-shock history" tab** inside the Historical Explorer panel — a static, clearly-labeled-as-non-live (2019–2024) view showing:
+- Historical ramp-shock frequency/magnitude over time (same threshold-based definition used in Phase 4, applied retroactively to hourly deltas)
+- Correlation with rising `share_res_pct` — this is the chart that visually makes the paper's RE-integration argument ("ramp shocks became more frequent as renewable share grew")
+- Framed explicitly as **motivating evidence** for the live Phase 4 ramp-shock classifier, not as a prediction of its own
 
 ### Panels
 
@@ -438,9 +449,10 @@ Same as Phase 3 — Google Colab, `ML/environment.yml`, dataset via Kaggle API.
 |-------|-------------|-------------|
 | **Live grid status** | Today's key metrics (peak demand, generation mix, frequency stats) as they arrive | `study1_daily.csv` latest row |
 | **Study 1 forecast** | Next-day demand forecast (national + regional) with confidence interval | Study 1 model output |
-| **Study 2 risk** | Today's 96-slot frequency-violation risk timeline | Study 2 model output on today's SCADA |
-| **Historical explorer** | Interactive time-series charts: demand trends, generation mix, IR-line flows, cross-border exchange, hourly demand curve (2019–2024, non-live) | Full `study1_daily.csv` + `study1_hourly.csv` |
-| **Anomaly log** | Days where actual demand deviated >X% from forecast, or violation rate was elevated | Derived |
+| **Study 2 risk** | Today's 96-slot frequency-violation + ramp-shock risk timeline | Study 2 model output on today's SCADA |
+| **Historical explorer** | Interactive time-series charts: demand trends, generation mix, IR-line flows, cross-border exchange | Full `study1_daily.csv` |
+| ↳ *Ramp-shock history* (tab within Historical explorer) | Historical ramp-shock frequency 2019–2024 vs. rising RES share — motivating evidence, non-live | `study1_hourly.csv` |
+| **Anomaly log** | Days where actual demand deviated >X% from forecast, or violation/ramp-shock rate was elevated | Derived |
 
 ### What already exists
 
@@ -502,9 +514,10 @@ Nothing — no draft, no venue chosen, no writing environment set up. This phase
 
 ### Where the material will come from
 
-- Results, metrics, feature-importance charts: Phase 3 (`ML/Study1/notebooks/03_baseline.ipynb`) and Phase 4 (`ML/Study2/notebooks/03_baseline.ipynb`)
+- Results, metrics, feature-importance charts: Phase 3 (`ML/Study1/notebooks/03_baseline.ipynb`) and Phase 4 (`ML/Study2/notebooks/03_violation_baseline.ipynb` + `04_ramp_shock_baseline.ipynb`)
 - Dataset methodology section: this roadmap's Phase 0 (parser fixes, spot-check log) and Phase 1 (validation gate, data dictionary) sections, plus `Dataset/README.md`
 - Grid-stress / feature-importance narrative: derived from both studies' feature-importance rankings
+- RE-integration motivation evidence: the historical ramp-shock analysis on `study1_hourly` (2019–2024, see Phase 5's "Ramp-shock history" tab) — shows ramp shocks becoming more frequent as `share_res_pct` rises, motivating why the live Phase 4 ramp-shock classifier matters
 
 ### If yes, target venues
 
@@ -514,12 +527,12 @@ Nothing — no draft, no venue chosen, no writing environment set up. This phase
 
 ### Paper structure (draft)
 
-1. Introduction: why Indian grid forecasting matters (RE integration, frequency instability)
+1. Introduction: why Indian grid forecasting matters (RE integration, frequency instability); motivate with the historical `study1_hourly` ramp-shock evidence (2019–2024 trend vs. rising RES share)
 2. Dataset: novel contribution — NLDC PSP reports scraped 2019–present, methodology, gaps
 3. Study 1: demand forecasting — features, model, results vs baseline
-4. Study 2: frequency-violation classifier — features, model, results, real-time applicability
-5. Discussion: feature importance findings, grid stress patterns
-6. Conclusion + future work (e.g. state-level study, intra-day forecasting on `study2_scada`)
+4. Study 2: frequency-violation + ramp-shock classifier — features, models, results, real-time applicability
+5. Discussion: feature importance findings, grid stress patterns, how the historical ramp-shock trend connects to the live classifier's results
+6. Conclusion + future work (e.g. state-level study, sequence models over the 96-slot window)
 
 Dataset itself (NLDC PSP scraped + parsed, 7 years, multi-study) is a secondary publishable contribution regardless of model results.
 
