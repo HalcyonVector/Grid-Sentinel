@@ -94,6 +94,7 @@ jobs:
              Dataset/study2_scada.csv \
              Dataset/study1_hourly.csv \
              Dataset/study3_states.csv \
+             Dataset/data_dictionary.xlsx \
              Dataset/README.md \
              Dataset/dataset-metadata.json \
              /tmp/kaggle_push/

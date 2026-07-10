@@ -1,6 +1,6 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, 74 fresh field checks with 0 mismatches, build_data_dict.py gap found and fixed)_
+_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, 74 fresh field checks with 0 mismatches, build_data_dict.py gap found and fixed; data_dictionary.xlsx now committed and added to the Kaggle push)_
 
 ---
 
@@ -180,11 +180,11 @@ Five sheets: `study1_daily` (144 cols), `study2_scada` (164 cols), `study1_hourl
 
 > **Bug found and fixed during the 2026-07-10 audit:** `build_data_dict.py` was never updated when `study3_states.csv` was built earlier that same day — it silently generated a 4-sheet dictionary missing the new dataset entirely, with no error. Fixed: added `study3_states` as a fifth sheet, added its 9 new column definitions, folded it into the `master` union (171 → 180 columns).
 >
-> **Open question, not yet resolved:** `Dataset/data_dictionary.xlsx` has never actually been committed to git (checked: no commit history for the file, and it's not in `.gitignore` either — it's just sat untracked since it was first generated). It's also not included in the Kaggle push step in `daily_scrape.yml`. So despite this section being marked "COMPLETE" and describing it as "published," the file isn't actually distributed anywhere yet — only reproducible by running the script locally. Needs a decision: commit it to the repo, add it to the Kaggle push, both, or neither (documented-but-intentionally-not-shipped). Not resolved as part of this audit since it's a judgment call, not a bug.
+> **Resolved 2026-07-10:** `Dataset/data_dictionary.xlsx` is now committed to the repo and added to the Kaggle push list. Reasoning: unlike `f1_daily.csv` (a disposable build intermediate no one should need to look at), this file *is* the deliverable — it's what makes 180 cryptic column names legible to a collaborator or a stranger on Kaggle. It only changes when the schema changes (new dataset/columns — rare, deliberate), so it's not wired into daily automation; regenerate and recommit it manually (`python Pipeline/build_data_dict.py`) whenever that happens. Note this was also a functional fix, not just a documentation one: `daily_scrape.yml`'s Kaggle push step does `cp Dataset/data_dictionary.xlsx ...` against a freshly-checked-out repo in CI — that `cp` would have failed once added if the file weren't actually committed, since CI has no access to a locally-generated-but-uncommitted file.
 
 ### 1d. Kaggle publish ✅ COMPLETE
 
-Four CSVs (`study1_daily`, `study1_hourly`, `study2_scada`, `study3_states` — the fourth added in Phase 2, 2026-07-10) auto-pushed to Kaggle on every daily update via GitHub Actions (`kaggle datasets version`). `KAGGLE_USERNAME` / `KAGGLE_KEY` secrets are set and working.
+Five files (`study1_daily.csv`, `study1_hourly.csv`, `study2_scada.csv`, `study3_states.csv` — the fourth CSV added in Phase 2, 2026-07-10 — plus `data_dictionary.xlsx`, added 2026-07-10) auto-pushed to Kaggle on every daily update via GitHub Actions (`kaggle datasets version`). `KAGGLE_USERNAME` / `KAGGLE_KEY` secrets are set and working.
 
 ---
 
