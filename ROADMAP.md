@@ -305,9 +305,9 @@ This supersedes treating Study 1 and Study 2 as two unrelated baselines. It's an
 
 ---
 
-## Phase 3 — Study 1: daily forecasting + Era 1 ramp characterization 🔲
+## Phase 3 — Study 1: daily forecasting + Era 1 ramp characterization ✅
 
-**Owner:** collaborator (handed off 2026-07-09).
+**Owner:** collaborator (handed off 2026-07-09, completed 2026-07-10).
 
 **Datasets used:** `study1_daily.csv` (2,660 rows × 144 cols, 2019–present) for the forecasting model and the full-history RES-share trend; `study1_hourly.csv` (46,728 rows × 151 cols, 2019–2024, frozen) for the **Era 1** intra-day ramp characterization — this is a real analytical deliverable, not a dashboard-only afterthought.
 
@@ -321,7 +321,15 @@ Predict next-day national (and ideally per-region) demand/energy from `study1_da
 
 ### What already exists
 
-Nothing — no `ML/` directory exists in the repo yet.
+`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks (`01_eda.ipynb`, `02_features.ipynb`, `03_baseline.ipynb`, `04_era1_ramp_characterization.ipynb`) are built and committed to `abhirami-branch` under `ML/Study1/notebooks/`. `predict.py` not yet built (deferred, per "Done when" below).
+
+Confirmed target column: `max_demand_met_total_mw`.
+
+Results:
+- LightGBM baseline (predicting next-day demand as lag1 + predicted delta, trained on lag/rolling/calendar features only) beat naive persistence: MAPE 0.0247 vs 0.0311, RMSE 7387.8 vs 8968.9, MAE 5367.5 vs 6735.0 (test window 2024–2026).
+- Era 1 ramp magnitude/frequency vs `share_res_pct`: correlation -0.367 / -0.429 respectively (monthly-aggregated, 2019–2022) — chart and `era1_ramp_vs_res_share.csv` produced. Note: both series share strong annual seasonality, so this correlation may be partly confounded by season rather than a clean RES-driven effect.
+- 69 missing dates found in `study1_daily.csv` (vs ~70 expected — consistent with Phase 0 documentation).
+- `ir_*`/`xb_*` corridor columns (only populated from 2023+) excluded from Study 1 features; revisit only if later feature importance suggests value.
 
 ### What needs to be built
 
@@ -384,7 +392,7 @@ Google Colab (see "ML Development Environment" above) — notebooks committed to
 
 ### Done when
 
-`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks are committed; the baseline model beats naive persistence on MAPE/RMSE on the 2024–2026 test window; the Era 1 ramp-characterization trend is produced and charted. `predict.py` and GitHub Actions wiring can follow after.
+~~`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks are committed; the baseline model beats naive persistence on MAPE/RMSE on the 2024–2026 test window; the Era 1 ramp-characterization trend is produced and charted.~~ **All done as of 2026-07-10.** `predict.py` and GitHub Actions wiring can follow after.
 
 ---
 
