@@ -1,6 +1,6 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, 74 fresh field checks with 0 mismatches, build_data_dict.py gap found and fixed; data_dictionary.xlsx now committed and added to the Kaggle push)_
+_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, 74 fresh field checks with 0 mismatches, build_data_dict.py gap found and fixed; data_dictionary.xlsx now committed and added to the Kaggle push; ML/Study1/predict.py built and wired into CI, closing Phase 3's last deferred item; found and fixed a real gap in daily_scrape.yml where study3_states.csv was never actually being committed)_
 
 ---
 
@@ -301,7 +301,7 @@ GitHub repo (ML/ folder)
     |-- load dataset via Kaggle API (one line, credentials already set up)
     |-- develop, train, iterate
     |-- commit updated notebook back to repo via git
-    |-- on merge: GitHub Actions runs predict.py to generate daily inference JSON
+    |-- on merge: GitHub Actions runs predict.py to generate daily inference output (CSV, not JSON -- see Phase 3)
     |-- Kaggle: upload clean finished notebooks as dataset companion notebooks (portfolio)
 ```
 
@@ -376,9 +376,13 @@ Predict next-day national (and ideally per-region) demand/energy from `study1_da
 
 ### What already exists
 
-`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks (`01_eda.ipynb`, `02_features.ipynb`, `03_baseline.ipynb`, `04_era1_ramp_characterization.ipynb`) are built and committed under `ML/Study1/notebooks/`. `predict.py` not yet built (deferred, per "Done when" below).
+`ML/environment.yml`, `ML/Study1/features.py`, all four notebooks (`01_eda.ipynb`, `02_features.ipynb`, `03_baseline.ipynb`, `04_era1_ramp_characterization.ipynb`) under `ML/Study1/notebooks/`, and `ML/Study1/predict.py` (built and wired into CI 2026-07-10 — see below) are all built and committed.
 
 Confirmed target column: `max_demand_met_total_mw`.
+
+### `predict.py` — built 2026-07-10
+
+Retrains the LightGBM baseline fresh on every run rather than loading a saved model artifact (training takes seconds on this dataset size), sidestepping the "how do we version a model file" question this section originally left open. Produces tomorrow's forecast and maintains `Dataset/predictions/study1_forecast.csv` — a running log with `predicted_mw`, and `actual_mw`/`residual_mw` backfilled once each target date's real data arrives. That residual is the forecast-residual signal Phase 4 is designed to consume. Wired into `.github/workflows/daily_scrape.yml` as a CI step, gated so a forecasting failure can never block the day's actual data from committing. See `Pipeline/docs/predict_notes.md` for the full design and verification (live run, idempotency check, isolated backfill test).
 
 ### Bug found and fixed (2026-07-10, after initial "done" claim)
 
@@ -414,8 +418,8 @@ ML/
     │   └── 04_era1_ramp_characterization.ipynb   Intra-day ramp magnitude/frequency from study1_hourly
     │                                              (2019–2022), correlated against share_res_pct — the Era 1 deliverable
     ├── features.py                        Shared feature-engineering functions
-    └── predict.py                         Outputs the next-day forecast AND the forecast-residual signal
-                                            (actual − predicted, once actual is known) that Phase 4 consumes
+    └── predict.py                         ✅ Built 2026-07-10. Outputs the next-day forecast AND the
+                                            forecast-residual signal (actual − predicted) that Phase 4 consumes
 ```
 
 ### Where the data lives
@@ -461,7 +465,7 @@ Google Colab (see "ML Development Environment" above) — notebooks committed to
 
 ### Done when
 
-~~`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks are committed; the baseline model beats naive persistence on MAPE/RMSE on the 2024–2026 test window; the Era 1 ramp-characterization trend is produced and charted.~~ **All done and independently re-verified as of 2026-07-10** (see "Bug found and fixed" above — the first pass had a broken naive-persistence comparison; corrected and re-run against live data before being marked complete here). `predict.py` and GitHub Actions wiring can follow after.
+~~`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks are committed; the baseline model beats naive persistence on MAPE/RMSE on the 2024–2026 test window; the Era 1 ramp-characterization trend is produced and charted.~~ ~~`predict.py` and GitHub Actions wiring can follow after.~~ **All done, including `predict.py` and CI wiring, as of 2026-07-10.** Phase 3 has no remaining deferred items.
 
 ---
 
@@ -577,28 +581,27 @@ This means all three CSVs appear in the dashboard for the era each one actually 
 
 ### What already exists
 
-Nothing — no dashboard code, no frontend, no `predict.py` inference scripts yet. Entirely blocked on Phase 3 and Phase 4 producing trained models first.
+`ML/Study1/predict.py` — built and wired into CI 2026-07-10 (see Phase 3 and `Pipeline/docs/predict_notes.md`). Outputs `Dataset/predictions/study1_forecast.csv` daily, with the actual/residual columns backfilled once each date's real data arrives. No dashboard code or frontend yet, and `ML/Study2/predict.py` is blocked on Phase 4 producing a trained model first.
 
 ### What needs to be built
 
-- `ML/Study1/predict.py` and `ML/Study2/predict.py` — load the trained model, run on the latest data, write a predictions JSON
-- A GitHub Actions job (alongside the existing daily scrape workflow) that runs both `predict.py` scripts daily and commits the output JSON to the repo
-- A static frontend (plain HTML/JS + a charting library) that reads the committed JSON/CSVs directly — no backend, no API server
+- `ML/Study2/predict.py` — same pattern as Study 1's, once Phase 4 has a trained model
+- A static frontend (plain HTML/JS + a charting library) that reads the committed CSVs/JSON directly — no backend, no API server
+- Wiring the frontend to actually read `Dataset/predictions/study1_forecast.csv` (Study 1's forecast panel needs no further backend work, just a frontend that consumes what already exists)
 
 ### Where the data/code will live
 
-- Inference scripts: `ML/Study1/predict.py`, `ML/Study2/predict.py` (per Phase 3/4 structure)
-- Predictions output: new committed JSON files, e.g. `Dataset/predictions/study1_forecast.json`, `Dataset/predictions/study2_risk.json` (path TBD)
+- Inference scripts: `ML/Study1/predict.py` (done), `ML/Study2/predict.py` (pending Phase 4)
+- Predictions output: `Dataset/predictions/study1_forecast.csv` (done, CSV not JSON — simpler to append to with pandas, matches every other output in this repo), `Dataset/predictions/study2_risk.csv` (pending, same convention)
 - Frontend: new top-level `docs/` or `dashboard/` folder, served via GitHub Pages
-- CI: extend `.github/workflows/daily_scrape.yml` or add a new workflow file for the inference step
+- CI: `.github/workflows/daily_scrape.yml` already runs `ML/Study1/predict.py` as a step; `ML/Study2/predict.py` will need the same treatment once it exists
 
 ### Step by step
 
-1. Once Phase 3's baseline model is trained, write `ML/Study1/predict.py` to load it and output a forecast JSON for the next day.
-2. Once Phase 4's baseline model is trained, write `ML/Study2/predict.py` similarly for the 96-slot risk timeline.
-3. Wire both into a GitHub Actions workflow that runs after the daily scrape, so predictions are always based on the freshest data.
-4. Build the static dashboard: start with the Historical Explorer panel (needs no model, can be built in parallel with Phase 3/4), then add the Live/Forecast/Risk panels once JSON output exists.
-5. Deploy via GitHub Pages, pointed at the new frontend folder.
+1. ~~Once Phase 3's baseline model is trained, write `ML/Study1/predict.py`~~ **Done 2026-07-10.**
+2. Once Phase 4's baseline model is trained, write `ML/Study2/predict.py` similarly for the 96-slot risk timeline, wired into the same CI job.
+3. Build the static dashboard: start with the Historical Explorer panel (needs no model, can be built now) and the Study 1 forecast panel (data already exists), then add the Study 2 risk panel once Phase 4 lands.
+4. Deploy via GitHub Pages, pointed at the new frontend folder.
 
 ### Technical stack
 

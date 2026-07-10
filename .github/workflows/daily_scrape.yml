@@ -40,7 +40,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install pandas openpyxl pdfplumber requests urllib3 xlrd "kaggle>=1.8.0"
+          pip install pandas openpyxl pdfplumber requests urllib3 xlrd "kaggle>=1.8.0" \
+                      numpy scikit-learn lightgbm
 
       # ── 4. Run scraper ─────────────────────────────────────────────────────
       - name: Run daily update
@@ -64,22 +65,38 @@ jobs:
             echo "Scrape exited with error — file not available yet or parse failed."
           else
             # Check if CSVs or raw folders changed
-            git diff --quiet Dataset/study1_daily.csv Dataset/study2_scada.csv \
+            git diff --quiet Dataset/study1_daily.csv Dataset/study2_scada.csv Dataset/study3_states.csv \
               && echo "changed=false" >> $GITHUB_OUTPUT \
               || echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      # ── 5. Commit raw file + updated CSVs ─────────────────────────────────
+      # ── 5. Study 1 next-day forecast ───────────────────────────────────────
+      # Retrains fresh each run (seconds, not minutes -- see ML/Study1/predict.py's
+      # notes on why no separate model artifact is stored). Runs only when new
+      # data actually arrived, and only after the CSV update so it forecasts from
+      # today's freshest row. Its output (Dataset/predictions/study1_forecast.csv)
+      # is committed in the same commit as the day's data update below.
+      - name: Run Study 1 forecast
+        if: steps.outcome.outputs.changed == 'true'
+        run: python ML/Study1/predict.py
+        # A forecasting failure should never block the day's actual data from being
+        # committed -- data freshness matters more than the forecast. If this fails,
+        # the log simply doesn't get a new row today; it catches up next successful run.
+        continue-on-error: true
+
+      # ── 6. Commit raw file + updated CSVs + forecast log ──────────────────
       - name: Commit and push
         if: steps.outcome.outputs.changed == 'true'
         run: |
           git config user.name  "Dedu"
           git config user.email "dedu[bot]@users.noreply.github.com"
-          git add Dataset/study1_daily.csv Dataset/study2_scada.csv Dataset/Raw/File2_Raw/ Dataset/Raw/File3_Raw/
+          git add Dataset/study1_daily.csv Dataset/study2_scada.csv Dataset/study3_states.csv \
+                  Dataset/predictions/study1_forecast.csv \
+                  Dataset/Raw/File2_Raw/ Dataset/Raw/File3_Raw/
           git commit -m "chore: daily PSP update $(date -u +%Y-%m-%d)"
           git push
 
-      # ── 6. Push updated datasets to Kaggle ────────────────────────────────
+      # ── 7. Push updated datasets to Kaggle ────────────────────────────────
       # Dataset/Raw/ contains thousands of raw XLS/PDF files that must not
       # be uploaded to Kaggle. Copy only the CSVs and metadata to a temp
       # directory and push from there.
@@ -102,7 +119,7 @@ jobs:
             -p /tmp/kaggle_push/ \
             -m "Daily PSP update $(date -u +%Y-%m-%d)"
 
-      # ── 7. Summary ─────────────────────────────────────────────────────────
+      # ── 8. Summary ─────────────────────────────────────────────────────────
       - name: Summary
         if: always()
         run: |
