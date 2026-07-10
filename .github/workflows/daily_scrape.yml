@@ -84,6 +84,18 @@ jobs:
         # the log simply doesn't get a new row today; it catches up next successful run.
         continue-on-error: true
 
+      # ── 5b. Study 2 risk timeline (violation + ramp-shock, 1-4-slot lead) ──
+      # Same retrain-fresh rationale as Study 1's forecast step. Trains on all days
+      # strictly before the latest complete day in study2_scada.csv (never on the
+      # day being predicted) and outputs a full 96-slot risk timeline for that day,
+      # not a single point estimate -- see ML/Study2/predict.py's docstring.
+      - name: Run Study 2 risk timeline
+        if: steps.outcome.outputs.changed == 'true'
+        run: python ML/Study2/predict.py
+        # Same reasoning as Study 1: a model failure must never block the day's
+        # actual data from committing.
+        continue-on-error: true
+
       # ── 6. Commit raw file + updated CSVs + forecast log ──────────────────
       - name: Commit and push
         if: steps.outcome.outputs.changed == 'true'
@@ -91,7 +103,7 @@ jobs:
           git config user.name  "Dedu"
           git config user.email "dedu[bot]@users.noreply.github.com"
           git add Dataset/study1_daily.csv Dataset/study2_scada.csv Dataset/study3_states.csv \
-                  Dataset/predictions/study1_forecast.csv \
+                  Dataset/predictions/study1_forecast.csv Dataset/predictions/study2_risk.csv \
                   Dataset/Raw/File2_Raw/ Dataset/Raw/File3_Raw/
           git commit -m "chore: daily PSP update $(date -u +%Y-%m-%d)"
           git push

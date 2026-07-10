@@ -1,6 +1,8 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified, plus ML/Study1/predict.py built and wired into CI closing Phase 3's last deferred item; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, build_data_dict.py gap found and fixed, data_dictionary.xlsx committed and added to the Kaggle push, a real gap in daily_scrape.yml where study3_states.csv was never being committed found and fixed, and the original 8-date spot-check fully re-derived from scratch — ~280 field comparisons, 0 mismatches)_
+_Last updated: 2026-07-11 (Phase 4 built and verified end-to-end: ML/Study2/features.py, all 5 notebooks (Era 2 daily correlation, Era 3 EDA, feature table, violation baseline, ramp-shock baseline), and ML/Study2/predict.py, wired into CI — closing Phase 4's only deferred item (owner). Every notebook's embedded numbers were independently re-executed against live data and matched exactly, not just written and assumed correct. Phase 4's real, honestly-reported results: ramp-shock lead-time classifier works well (PR-AUC 0.714, 4x lift over base rate); frequency-violation lead-time classifier is much weaker (PR-AUC 0.061, ~2x lift) — reported as-is, not dressed up. See Phase 4 below for full detail.)_
+
+_Previous update, 2026-07-10: Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified, plus ML/Study1/predict.py built and wired into CI closing Phase 3's last deferred item; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, build_data_dict.py gap found and fixed, data_dictionary.xlsx committed and added to the Kaggle push, a real gap in daily_scrape.yml where study3_states.csv was never being committed found and fixed, and the original 8-date spot-check fully re-derived from scratch — ~280 field comparisons, 0 mismatches._
 
 ---
 
@@ -39,9 +41,16 @@ Grid-Sentinel/
 │       └── File3_Raw/  FY2025+ XLS files with TimeSeries sheet, used for study2_scada
 ├── ML/                 Modelling work (Phase 3+)
 │   ├── environment.yml     Conda env for Colab/local notebook use
-│   └── Study1/
-│       ├── features.py         Shared feature engineering, imported by notebooks + predict.py
-│       └── notebooks/          01_eda, 02_features, 03_baseline, 04_era1_ramp_characterization
+│   ├── Study1/
+│   │   ├── features.py         Shared feature engineering, imported by notebooks + predict.py
+│   │   ├── predict.py           Daily next-day demand forecast, wired into CI
+│   │   └── notebooks/          01_eda, 02_features, 03_baseline, 04_era1_ramp_characterization
+│   └── Study2/
+│       ├── features.py         Shared feature engineering (labels, lag/rolling slot features,
+│       │                       Study1 residual backtest), imported by notebooks + predict.py
+│       ├── predict.py           Daily 96-slot violation/ramp-shock risk timeline, wired into CI
+│       └── notebooks/          00_era2_daily_correlation, 01_eda, 02_features,
+│                               03_violation_baseline, 04_ramp_shock_baseline
 ├── Pipeline/           Build, validate, and data-dictionary scripts
 │   ├── build_all.py        Full rebuild of all four datasets
 │   ├── validate.py         Post-build integrity checks
@@ -386,7 +395,7 @@ Confirmed target column: `max_demand_met_total_mw`.
 
 ### `predict.py` — built 2026-07-10
 
-Retrains the LightGBM baseline fresh on every run rather than loading a saved model artifact (training takes seconds on this dataset size), sidestepping the "how do we version a model file" question this section originally left open. Produces tomorrow's forecast and maintains `Dataset/predictions/study1_forecast.csv` — a running log with `predicted_mw`, and `actual_mw`/`residual_mw` backfilled once each target date's real data arrives. That residual is the forecast-residual signal Phase 4 is designed to consume. Wired into `.github/workflows/daily_scrape.yml` as a CI step, gated so a forecasting failure can never block the day's actual data from committing. See `Pipeline/docs/predict_notes.md` for the full design and verification (live run, idempotency check, isolated backfill test).
+Retrains the LightGBM baseline fresh on every run rather than loading a saved model artifact (training takes seconds on this dataset size), sidestepping the "how do we version a model file" question this section originally left open. Produces tomorrow's forecast and maintains `Dataset/predictions/study1_forecast.csv` — a running log with `predicted_mw`, and `actual_mw`/`residual_mw` backfilled once each target date's real data arrives. That residual is the forecast-residual signal Phase 4 is designed to consume. Wired into `.github/workflows/daily_scrape.yml` as a CI step, gated so a forecasting failure can never block the day's actual data from committing. See `Pipeline/docs/study1_predict_notes.md` for the full design and verification (live run, idempotency check, isolated backfill test).
 
 ### Bug found and fixed (2026-07-10, after initial "done" claim)
 
@@ -473,9 +482,9 @@ Google Colab (see "ML Development Environment" above) — notebooks committed to
 
 ---
 
-## Phase 4 — Study 2: corridor-aware grid-stress early-warning classifier 🔲
+## Phase 4 — Study 2: corridor-aware grid-stress early-warning classifier ✅ COMPLETE (2026-07-11)
 
-**Owner:** TBD — starts after Phase 3 by design (consumes Phase 3's forecast-residual signal; the two collaborators have agreed sequencing is fine).
+**Owner:** Sagnik, built directly (2026-07-11) — the "owner TBD" open decision from 2026-07-10 was resolved by building it rather than waiting on collaborator assignment. Consumed Phase 3's forecast-residual signal as designed (see `build_study1_residual_signal()` below).
 
 **Datasets used:** `study1_daily.csv` for the Era 2 (2023–Oct 2024) daily-resolution pre-check; `study2_scada.csv` (56,988 rows × 164 cols, 96 slots/day, Nov 2024–present) for the Era 3 live model.
 
@@ -493,23 +502,33 @@ Answer the Era 2 + Era 3 parts of the central research question: does corridor c
 
 ### What already exists
 
-Nothing yet — no `ML/Study2/` directory.
-
-### What needs to be built
+Everything. `ML/Study2/features.py`, all 5 notebooks (`00_era2_daily_correlation.ipynb` through `04_ramp_shock_baseline.ipynb`), and `ML/Study2/predict.py` (wired into CI) are all built and committed. See `Pipeline/docs/study2_features_notes.md` and `Pipeline/docs/study2_predict_notes.md` for full design detail.
 
 ```
 ML/Study2/
 ├── notebooks/
-│   ├── 00_era2_daily_correlation.ipynb   Era 2 (2023–Oct 2024) pre-check on study1_daily: does ir_*/xb_*
-│   │                                      correlate with freq_pct_* stress indicators at daily resolution?
-│   ├── 01_eda.ipynb                      Era 3 SCADA EDA: violation + ramp-shock rate by hour/season/gen-mix/corridor
-│   ├── 02_features.ipynb                 Slot-level + lag-1 features, ramp-magnitude features, Study 1's
-│   │                                      forecast-residual broadcast in as a feature, class-imbalance handling
-│   ├── 03_violation_baseline.ipynb       LightGBM baseline for the lead-time frequency-violation target
-│   └── 04_ramp_shock_baseline.ipynb      LightGBM baseline for the lead-time ramp-shock target (shares features.py)
-├── features.py                           Shared feature-engineering functions (same pattern as Study1)
-└── predict.py                            GitHub Actions inference script — outputs both targets
+│   ├── 00_era2_daily_correlation.ipynb   ✅ Era 2 (2023–Oct 2024) pre-check on study1_daily
+│   ├── 01_eda.ipynb                      ✅ Era 3 SCADA EDA
+│   ├── 02_features.ipynb                 ✅ Feature table inspection + class balance
+│   ├── 03_violation_baseline.ipynb       ✅ LightGBM baseline, frequency-violation target
+│   └── 04_ramp_shock_baseline.ipynb      ✅ LightGBM baseline, ramp-shock target
+├── features.py                           ✅ Shared feature-engineering functions
+└── predict.py                            ✅ Daily 96-slot risk timeline, wired into CI
 ```
+
+### Verified results (2026-07-11)
+
+Every number below was independently re-executed against the live dataset (56,988 raw slots, 56,923 after dropping 3 corrupted-file days) and matched what's embedded in the corresponding notebook exactly — not just written into the notebook and assumed correct.
+
+**Era 2 daily-resolution pre-check** (`00_era2_daily_correlation.ipynb`, `study1_daily.csv` 2023-01-01 to 2024-10-31, 670 rows): IR-line corridor congestion (sum of `|ir_*_net_mu|` across all 7 corridors) has a moderate **negative** correlation with same-day frequency-stress-band time (`freq_pct_below_499 + freq_pct_above_5005`): **-0.396**, strongest for WR↔NR (-0.418) and NER↔NR (-0.368). The lagged version (today's flow vs. tomorrow's stress) is similar (-0.428). Negative direction makes physical sense: corridors move power specifically to relieve regional imbalance, so higher utilization coincides with *lower* instability — corridors are evidence of the grid correcting stress, not causing it. Cross-border exchange shows close to no correlation (-0.014 overall; Myanmar's column is constant zero in this window, essentially unconnected). This calibrated expectations for Era 3: IR-line net flow (especially WR-NR, NER-NR) was carried forward as the more promising corridor signal; cross-border columns are included in the classifiers too but with low expectations, consistent with this daily-resolution finding.
+
+**Era 3 EDA** (`01_eda.ipynb`, live `study2_scada.csv`, Nov 2024–present): overall violation rate 0.89%, ramp-shock rate 6.1%. Both cluster sharply and physically-explainably by time of day: violations peak 08:00-09:00 and 13:00 (up to 4.0%, solar variability hours), ramp-shocks peak at sunrise (05:00-09:00, up to 36% at 06:00) and sunset (17:00-20:00, up to 8.6%) — the two windows solar output changes fastest. Violation rate rises **monotonically** with RES-share quintile (0.33% → 1.92%) — direct SCADA-resolution evidence for the project's central "rising RES share stresses the grid" thesis. Ramp-shock rate vs. RES-share quintile goes the *other* direction in simple binning (8.3% → 2.8%) — flagged as a genuine, unresolved, likely season-confounded finding (RES share and ramp rate are both strongly seasonal independently), not smoothed over.
+
+**Frequency-violation classifier** (`03_violation_baseline.ipynb`, LightGBM, time-aware split 2024-11→2025-06 train / 2025-07→2025-12 val / 2026 test): **PR-AUC 0.0614** vs. a 0.0305 base-rate baseline (~2x lift). F1 at a naive 0.5 threshold is 0.0000 (positive rate too low for that threshold to ever fire); at the best-F1 operating point (threshold ≈0.14): **F1 0.1297, precision 7.4%, recall 54.6%** — catches over half of upcoming violations 15-60 min ahead, at real cost in false alarms. Recall at ≥95% precision is effectively 0 — a high-confidence-only alert mode isn't achievable with this feature set yet. **Reported as a weak-but-real baseline, not oversold.**
+
+**Ramp-shock classifier** (`04_ramp_shock_baseline.ipynb`, same split/pipeline): **PR-AUC 0.7140** vs. a 0.1793 base-rate baseline (~4x lift) — a genuinely strong signal. F1@0.5 = 0.6293. Recall at ≥95% precision = 17.7%. Top features: `hour`, `demand_delta_mw`, recent demand lags — consistent with the EDA's sunrise/sunset clustering. Corridor columns place in the top 10 but are secondary to the time/demand signal, consistent with Era 2's finding that corridor flow has a real but non-dominant relationship with stress.
+
+**Honest takeaway:** ramp-shock lead-time prediction works well from this feature set; frequency-violation lead-time prediction is much harder and only modestly better than chance — plausibly because a violation is a downstream, AGC/reserve-mediated consequence of a ramp rather than a direct mechanical property of it. Both results and the gap between them are reported as-is; future work (finer time-of-day binning, shorter lead horizon, or a two-stage ramp→violation model) is noted in `03_violation_baseline.ipynb` rather than pursued now.
 
 ### Where the data lives
 
@@ -532,28 +551,32 @@ One known bad day (2025-10-02, 63 slots) must be dropped before training; a hand
 
 ### Step by step
 
-1. **`00_era2_daily_correlation.ipynb`** — on `study1_daily.csv` restricted to 2023–Oct 2024, test whether `ir_*`/`xb_*` levels correlate with `freq_pct_*` stress indicators at daily resolution. This is a real analysis, not a placeholder — its findings inform which corridor/cross-border features matter most for Era 3's feature engineering.
-2. Define the violation label from `freq_hz` against the 49.7–50.2 Hz nominal band (NLDC grid code), shifted to a 1–4-slot lead-time target.
-3. Define the ramp-shock label: a threshold on the slot-to-slot change in `demand_met_mw`/`net_demand_met_mw`, same lead-time shift.
-4. **`01_eda.ipynb`** — both event rates by hour, season, generation mix, corridor stress in the live SCADA data.
-5. **`02_features.ipynb` + `features.py`** — slot-level + lag-1-slot features, ramp-magnitude features, Study 1's forecast-residual as an input feature; address class imbalance (SMOTE or class-weighted loss — both targets are rare events, ~0.88% base rate for violations).
-6. **`03_violation_baseline.ipynb`** — time-aware split: 2024-11→2025-06 train, 2025-07→2025-12 val, 2026 test. LightGBM baseline.
-7. **`04_ramp_shock_baseline.ipynb`** — same split, same feature pipeline, LightGBM baseline.
-8. **(Stretch)** — temporal CNN or LSTM over the 96-slot daily window.
-9. **Metrics** — PR-AUC, recall at 95% precision, F1 for both targets.
+1. ~~**`00_era2_daily_correlation.ipynb`**~~ ✅ Done — see verified results above.
+2. ~~Define the violation label~~ ✅ Done — `add_violation_label()` in `features.py`, 49.7–50.2 Hz band, 1–4-slot lead-time via `_add_lead_label()`.
+3. ~~Define the ramp-shock label~~ ✅ Done — `add_ramp_label()`, 3,500 MW slot-to-slot delta threshold (≈p95, empirically derived), same lead-time framing.
+4. ~~**`01_eda.ipynb`**~~ ✅ Done — see verified results above.
+5. ~~**`02_features.ipynb` + `features.py`**~~ ✅ Done. Class imbalance handled via LightGBM's `scale_pos_weight` (chosen over SMOTE — see `study2_features_notes.md`), not SMOTE.
+6. ~~**`03_violation_baseline.ipynb`**~~ ✅ Done — PR-AUC 0.0614.
+7. ~~**`04_ramp_shock_baseline.ipynb`**~~ ✅ Done — PR-AUC 0.7140.
+8. **(Stretch, not done)** — temporal CNN or LSTM over the 96-slot daily window. Not attempted; the LightGBM baselines are the deliverable for this phase.
+9. ~~**Metrics**~~ ✅ Done — PR-AUC, recall@95%precision, F1 (best-threshold, not just @0.5) reported for both targets.
 
 ### Outputs
 
-- Era 2 daily-resolution corridor/cross-border-vs-stress correlation findings
-- 15–60-min-ahead frequency-violation probability
-- 15–60-min-ahead ramp-shock probability
-- Feature importance: which corridor / cross-border level / forecast-residual is most predictive of each
-- Risk heatmap: time-of-day × day-of-week event frequency (dashboard panel)
-- Threshold analysis: precision-recall curve, for both targets
+- ✅ Era 2 daily-resolution corridor/cross-border-vs-stress correlation findings
+- ✅ 15–60-min-ahead frequency-violation probability — `ML/Study2/predict.py`, `Dataset/predictions/study2_risk.csv`
+- ✅ 15–60-min-ahead ramp-shock probability — same output file
+- ✅ Feature importance: which corridor / cross-border level / forecast-residual is most predictive of each — printed in `03`/`04`'s notebooks
+- 🔲 Risk heatmap (time-of-day × day-of-week event frequency) — dashboard panel, deferred to Phase 5
+- ✅ Threshold analysis: precision-recall curve, best-F1 operating point, recall@95%precision — both targets
 
 ### Environment
 
-Same as Phase 3 — Google Colab, `ML/environment.yml`, dataset via Kaggle API.
+Same as Phase 3 — Google Colab, `ML/environment.yml`, dataset via Kaggle API. (Built and verified locally this session using the same local Python environment as the rest of the repo — packages already present: pandas 3.0.2, numpy 2.4.4, scikit-learn 1.9.0, lightgbm 4.6.0.)
+
+### Done when
+
+~~`ML/Study2/features.py` and all 5 notebooks are committed; both classifiers have a reported baseline (PR-AUC, F1, recall@precision); `predict.py` and CI wiring exist.~~ **All done, as of 2026-07-11.** Phase 4 has no remaining deferred items. Note: results are honestly mixed (ramp-shock baseline is strong, violation baseline is weak) — "done" means the pipeline and honest evaluation are complete, not that both targets are production-ready.
 
 ---
 
@@ -585,26 +608,25 @@ This means all three CSVs appear in the dashboard for the era each one actually 
 
 ### What already exists
 
-`ML/Study1/predict.py` — built and wired into CI 2026-07-10 (see Phase 3 and `Pipeline/docs/predict_notes.md`). Outputs `Dataset/predictions/study1_forecast.csv` daily, with the actual/residual columns backfilled once each date's real data arrives. No dashboard code or frontend yet, and `ML/Study2/predict.py` is blocked on Phase 4 producing a trained model first.
+`ML/Study1/predict.py` — built and wired into CI 2026-07-10 (see Phase 3 and `Pipeline/docs/study1_predict_notes.md`). Outputs `Dataset/predictions/study1_forecast.csv` daily. `ML/Study2/predict.py` — built and wired into CI 2026-07-11 (see Phase 4 and `Pipeline/docs/study2_predict_notes.md`). Outputs `Dataset/predictions/study2_risk.csv` daily, a full 96-slot violation/ramp-shock risk timeline for the latest complete day. No dashboard frontend yet — both prediction outputs exist and are ready to be consumed once Phase 5 starts.
 
 ### What needs to be built
 
-- `ML/Study2/predict.py` — same pattern as Study 1's, once Phase 4 has a trained model
-- A static frontend (plain HTML/JS + a charting library) that reads the committed CSVs/JSON directly — no backend, no API server
-- Wiring the frontend to actually read `Dataset/predictions/study1_forecast.csv` (Study 1's forecast panel needs no further backend work, just a frontend that consumes what already exists)
+- A static frontend (plain HTML/JS + a charting library) that reads the committed CSVs/JSON directly — no backend, no API server. Nothing else is blocked — both `study1_forecast.csv` and `study2_risk.csv` already exist and update daily.
+- Wiring the frontend to actually read `Dataset/predictions/study1_forecast.csv` and `Dataset/predictions/study2_risk.csv` (neither needs further backend work, just a frontend that consumes what already exists)
 
 ### Where the data/code will live
 
-- Inference scripts: `ML/Study1/predict.py` (done), `ML/Study2/predict.py` (pending Phase 4)
-- Predictions output: `Dataset/predictions/study1_forecast.csv` (done, CSV not JSON — simpler to append to with pandas, matches every other output in this repo), `Dataset/predictions/study2_risk.csv` (pending, same convention)
+- Inference scripts: `ML/Study1/predict.py` (done), `ML/Study2/predict.py` (done)
+- Predictions output: `Dataset/predictions/study1_forecast.csv` (done, CSV not JSON — simpler to append to with pandas, matches every other output in this repo), `Dataset/predictions/study2_risk.csv` (done, same convention)
 - Frontend: new top-level `docs/` or `dashboard/` folder, served via GitHub Pages
-- CI: `.github/workflows/daily_scrape.yml` already runs `ML/Study1/predict.py` as a step; `ML/Study2/predict.py` will need the same treatment once it exists
+- CI: `.github/workflows/daily_scrape.yml` already runs both `ML/Study1/predict.py` and `ML/Study2/predict.py` as steps
 
 ### Step by step
 
 1. ~~Once Phase 3's baseline model is trained, write `ML/Study1/predict.py`~~ **Done 2026-07-10.**
-2. Once Phase 4's baseline model is trained, write `ML/Study2/predict.py` similarly for the 96-slot risk timeline, wired into the same CI job.
-3. Build the static dashboard: start with the Historical Explorer panel (needs no model, can be built now) and the Study 1 forecast panel (data already exists), then add the Study 2 risk panel once Phase 4 lands.
+2. ~~Once Phase 4's baseline model is trained, write `ML/Study2/predict.py`~~ **Done 2026-07-11.**
+3. Build the static dashboard: start with the Historical Explorer panel (needs no model, can be built now) and both the Study 1 forecast panel and Study 2 risk panel — data already exists for all three as of 2026-07-11.
 4. Deploy via GitHub Pages, pointed at the new frontend folder.
 
 ### Technical stack
@@ -621,8 +643,8 @@ Frontend needs no build environment (plain HTML/JS, or a minimal static-site set
 ### Milestones
 
 1. Historical Explorer panel live (no model dependency — can start anytime)
-2. Phase 3 model done → export daily forecast JSON from GitHub Actions
-3. Phase 4 model done → export slot-level risk JSON
+2. ~~Phase 3 model done → export daily forecast JSON from GitHub Actions~~ ✅ Done 2026-07-10 (CSV, not JSON — see "Where the data/code will live" above)
+3. ~~Phase 4 model done → export slot-level risk JSON~~ ✅ Done 2026-07-11 (same CSV convention)
 4. Full dashboard consuming both + raw CSVs
 5. Launch publicly on GitHub Pages
 
@@ -630,7 +652,7 @@ Frontend needs no build environment (plain HTML/JS, or a minimal static-site set
 
 ## Phase 6 — Research paper (conditional) 🔲
 
-**Decision gate:** after Phase 3 + 4 are complete, assess whether results are strong enough to publish.
+**Decision gate:** after Phase 3 + 4 are complete, assess whether results are strong enough to publish. **Both are now complete (2026-07-11) — the gate has technically been reached.** Flagging, not deciding: Phase 4's results are mixed (ramp-shock baseline is strong at PR-AUC 0.714; frequency-violation baseline is weak at PR-AUC 0.061) — whether that's "strong enough," especially framed around the dataset-methodology contribution (which stands regardless of model strength) plus the Era 1/2/3 narrative rather than the violation classifier alone, is a call for Sagnik to make, not one made here.
 
 ### Goal
 
