@@ -79,10 +79,12 @@ Grid-Sentinel/
 
 | File | Rows | Cols | Date range | Source |
 |------|------|------|------------|--------|
-| `Dataset/study1_daily.csv` | 2,678 | 144 | 2018-12-31 → present | `Dataset/Raw/File2_Raw/` |
+| `Dataset/study1_daily.csv` | 2,679 | 144 | 2018-12-31 → present | `Dataset/Raw/File2_Raw/` |
 | `Dataset/study1_hourly.csv` | 46,728 | 151 | 2019-01-01 → 2024-04-30 | `Dataset/Raw/File1_Raw/` + `hourlyLoadDataIndia.xlsx` |
-| `Dataset/study2_scada.csv` | 56,892 | 164 | 2024-11-04 → present | `Dataset/Raw/File3_Raw/` |
+| `Dataset/study2_scada.csv` | 56,988 | 164 | 2024-11-04 → present | `Dataset/Raw/File3_Raw/` |
 | `Dataset/study3_states.csv` | 99,208 | 10 | 2018-12-31 → present | `Dataset/Raw/File2_Raw/` |
+
+_Row counts as of 2026-07-11 — grow daily via the automated pipeline, so treat as a snapshot, not a live figure._
 
 ### Build commands
 
@@ -330,17 +332,24 @@ Feature engineering logic that is shared between training notebooks and the infe
 ML/
 ├── Study1/
 │   ├── notebooks/
-│   │   ├── 01_eda.ipynb            EDA: demand trends, seasonality, generation mix, missing data
-│   │   ├── 02_features.ipynb       Feature engineering: lags, rolling stats, seasonality encoding
-│   │   └── 03_baseline.ipynb       LightGBM baseline, time-aware split, metrics, feature importance
+│   │   ├── 01_eda.ipynb                        EDA: demand trends, seasonality, generation mix, missing data
+│   │   ├── 02_features.ipynb                   Feature engineering: lags, rolling stats, seasonality encoding
+│   │   ├── 03_baseline.ipynb                   LightGBM baseline, time-aware split, metrics, feature importance
+│   │   └── 04_era1_ramp_characterization.ipynb Era 1 intra-day ramp analysis (2019-2022) vs RES share
 │   ├── features.py                 Shared feature engineering module (used by notebooks and predict.py)
-│   ├── predict.py                  GitHub Actions inference script: loads model, outputs predictions JSON
-│   └── models/                     Trained model artifacts (gitignored, not committed to repo)
+│   └── predict.py                  GitHub Actions inference script -- see below
 └── Study2/
-    └── (same structure, Phase 4)
+    ├── notebooks/
+    │   ├── 00_era2_daily_correlation.ipynb  Era 2 corridor/cross-border vs frequency-stress correlation
+    │   ├── 01_eda.ipynb                     Era 3 SCADA EDA: violation/ramp rate by hour/season/gen-mix
+    │   ├── 02_features.ipynb                Feature table inspection + class balance
+    │   ├── 03_violation_baseline.ipynb      LightGBM baseline, frequency-violation target
+    │   └── 04_ramp_shock_baseline.ipynb     LightGBM baseline, ramp-shock target
+    ├── features.py                 Shared feature engineering module (used by notebooks and predict.py)
+    └── predict.py                  GitHub Actions inference script -- see below
 ```
 
-Model artifacts are gitignored. The trained model will be stored separately (options: Git LFS, a GitHub release asset, or a small model committed directly if under 50MB) and documented here once Phase 3 training is complete.
+**Resolved (2026-07-10/11), superseding earlier plans on this page:** neither `predict.py` loads a saved model or outputs JSON, and there is no `models/` directory in either `Study1/` or `Study2/` -- both scripts retrain their model fresh on every run instead (training takes seconds on these dataset sizes), which sidesteps the "how do we version/store a trained model artifact" question this section originally left open rather than answering it. Output is CSV, not JSON (`Dataset/predictions/study1_forecast.csv`, `Dataset/predictions/study2_risk.csv`) -- simpler to append to with pandas, and matches every other output format in this repo. See `Pipeline/docs/study1_predict_notes.md` / `study2_predict_notes.md` for the full reasoning.
 
 ### Environment file
 
@@ -474,7 +483,7 @@ ML/
 
 ### Environment
 
-Google Colab (see "ML Development Environment" above) — notebooks committed to the repo, dataset loaded via the Kaggle API, `ML/environment.yml` created first. Model artifact gitignored; storage method (Git LFS / GitHub release asset / direct commit if <50MB) decided once training is done.
+Google Colab (see "ML Development Environment" above) — notebooks committed to the repo, dataset loaded via the Kaggle API, `ML/environment.yml` created first. **Resolved 2026-07-10:** no model artifact is stored at all — `predict.py` retrains fresh on every run (see "Repository structure for ML work" above) — so the Git LFS / release-asset / direct-commit storage question this line originally left open never needed answering.
 
 ### Done when
 
@@ -632,8 +641,8 @@ This means all three CSVs appear in the dashboard for the era each one actually 
 ### Technical stack
 
 - Static site on GitHub Pages (free hosting, no server)
-- Python model inference runs in GitHub Actions each day → outputs JSON predictions committed to repo
-- Frontend: lightweight JS (Plotly.js or Observable Plot) reading the committed JSON/CSV
+- Python model inference runs in GitHub Actions each day → outputs CSV predictions committed to repo (both `predict.py` scripts already do this, see above)
+- Frontend: lightweight JS (Plotly.js or Observable Plot) reading the committed CSVs
 - No backend required — all data is in the repo
 
 ### Environment
