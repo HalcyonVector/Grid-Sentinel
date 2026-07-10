@@ -1,6 +1,6 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified)_
+_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, 74 fresh field checks with 0 mismatches, build_data_dict.py gap found and fixed)_
 
 ---
 
@@ -170,17 +170,45 @@ Script: `Pipeline/validate.py`. Run after every rebuild. Exits 0 on all pass, 1 
 
 Checks not yet implemented: null % per column vs stored baseline; date continuity against the known 70-gap list (gap list is prose in this roadmap, not machine-readable).
 
-> **Col count note:** study2_scada baseline set to 164 (observed). Roadmap previously stated 165. Discrepancy not yet traced to a specific missing column.
+> **Col count note — resolved 2026-07-10:** study2_scada's 164 columns are exactly `study1_daily`'s 144 columns (fully present, none missing — verified by direct diff) plus exactly 20 real-time/SCADA-specific columns (`time`, `hhmm`, `freq_hz`, `demand_met_mw`, per-source real-time generation, `net_demand_met_mw`, `total_gen_mw`, `net_trans_exchange_mw`, and 6 `time_max_demand_met_*` columns). 144 + 20 = 164 exactly, no gap. The "165" in earlier roadmap prose was a stale estimate written before the dataset was actually built and counted — not a missing column.
 
-### 1c. Data dictionary ✅ COMPLETE (2026-07-01)
+### 1c. Data dictionary ✅ COMPLETE (2026-07-01; updated 2026-07-10)
 
 Script: `Pipeline/build_data_dict.py`. Generates `Dataset/data_dictionary.xlsx`.
 
-Four sheets: `study1_daily` (144 cols), `study2_scada` (164 cols), `study1_hourly` (151 cols), `master` (union of all unique columns). Fields: `column_name`, `datasets`, `unit`, `source_section`, `schema_start_date`, `notes`. All columns have unit and source section populated. Notes cover all domain-specific columns (derivation, caveats, schema gaps).
+Five sheets: `study1_daily` (144 cols), `study2_scada` (164 cols), `study1_hourly` (151 cols), `study3_states` (10 cols, added 2026-07-10 — see audit note below), `master` (union of all unique columns, 180). Fields: `column_name`, `datasets`, `unit`, `source_section`, `schema_start_date`, `notes`. All columns across all five sheets have unit and source section populated.
+
+> **Bug found and fixed during the 2026-07-10 audit:** `build_data_dict.py` was never updated when `study3_states.csv` was built earlier that same day — it silently generated a 4-sheet dictionary missing the new dataset entirely, with no error. Fixed: added `study3_states` as a fifth sheet, added its 9 new column definitions, folded it into the `master` union (171 → 180 columns).
+>
+> **Open question, not yet resolved:** `Dataset/data_dictionary.xlsx` has never actually been committed to git (checked: no commit history for the file, and it's not in `.gitignore` either — it's just sat untracked since it was first generated). It's also not included in the Kaggle push step in `daily_scrape.yml`. So despite this section being marked "COMPLETE" and describing it as "published," the file isn't actually distributed anywhere yet — only reproducible by running the script locally. Needs a decision: commit it to the repo, add it to the Kaggle push, both, or neither (documented-but-intentionally-not-shipped). Not resolved as part of this audit since it's a judgment call, not a bug.
 
 ### 1d. Kaggle publish ✅ COMPLETE
 
-Three CSVs auto-pushed to Kaggle on every daily update via GitHub Actions (`kaggle datasets version`). `KAGGLE_USERNAME` / `KAGGLE_KEY` secrets are set and working.
+Four CSVs (`study1_daily`, `study1_hourly`, `study2_scada`, `study3_states` — the fourth added in Phase 2, 2026-07-10) auto-pushed to Kaggle on every daily update via GitHub Actions (`kaggle datasets version`). `KAGGLE_USERNAME` / `KAGGLE_KEY` secrets are set and working.
+
+---
+
+## Audit: Phase 0-1 re-verification (2026-07-10)
+
+After finding real bugs in Phase 2 and Phase 3 by actually re-testing their claims instead of trusting the write-ups, Phase 0 and Phase 1 were put through the same adversarial check — not just re-reading their documentation, but independently re-deriving evidence against raw source files and live code execution.
+
+**What was checked and confirmed correct:**
+
+- **164 vs 165 column count discrepancy** (previously flagged as unresolved prose): traced definitively. `study2_scada` = all 144 `study1_daily` columns (verified present via direct diff, none missing) + exactly 20 real-time SCADA-only columns = 164 exactly. The "165" was a stale pre-build estimate, not a bug.
+- **Fresh field-by-field spot-check**, two dates never covered by the original 8-date check: **2022-03-10** (PDF era, 30 fields checked against raw text) and **2024-09-16** (XLS era, 44 fields including all 12 `xb_*` cross-border and IR-Line corridor values checked against raw sheets). **74 independent field checks, 0 mismatches** — this also directly confirms the diversity, max_demand_met, xb_export/import, and IR-Line backport fix claims.
+- **Irreducible-gap claim**: while locating spot-check files, found a real, previously-unlisted-by-date example — `2020-11-13` and `2020-11-15` are both genuinely absent from the raw archive (no source file exists under any name), consistent with the documented "duplicate subject-line dates" category. Confirms the gap category is real, not a parser failure being miscategorized.
+- **Dedup-by-date logic**: found a real duplicate case in the same window (`17.11.20` and `18.11.20` both carry the subject-line date 2020-11-17). Parsed both independently — zero differing field values between them (a genuine NLDC re-publish, not conflicting reports), so the "keep richest row" tie-break is safe here regardless of which one wins.
+- **Incremental live-update logic**: `append_study1`, `append_study2`, and `append_study3` in `Scrapings/update_live.py` each independently tested by removing a known date from a test copy of its CSV, re-appending via the actual function, and diffing against the full-rebuild original. **All three byte-identical.**
+
+**What was checked and found broken, then fixed:**
+
+- `Pipeline/build_data_dict.py` had not been updated when `study3_states.csv` was built earlier the same day — silently produced a 4-sheet dictionary missing the new dataset, no error raised. Fixed (see 1c above).
+
+**What was checked and found unresolved (flagged, not silently decided):**
+
+- `Dataset/data_dictionary.xlsx` has never been committed to git and isn't part of the Kaggle push, despite Phase 1c calling it "published." Needs an explicit decision (see 1c above).
+
+**Not independently re-audited:** the original Phase 0 spot-check log (8 dates × 44 fields) and the full 70-gap enumeration were not re-derived from scratch in full — this audit's fresh checks (74 fields, 2 new gap dates, 1 dedup case) are additional evidence layered on top of the original claims, not a full re-run of them. Given zero discrepancies found across everything actually re-tested, confidence in the untested remainder is high but not absolute.
 
 ---
 
@@ -432,7 +460,7 @@ Google Colab (see "ML Development Environment" above) — notebooks committed to
 
 **Owner:** TBD — starts after Phase 3 by design (consumes Phase 3's forecast-residual signal; the two collaborators have agreed sequencing is fine).
 
-**Datasets used:** `study1_daily.csv` for the Era 2 (2023–Oct 2024) daily-resolution pre-check; `study2_scada.csv` (55,068 rows × 164/165 cols, 96 slots/day, Nov 2024–present) for the Era 3 live model.
+**Datasets used:** `study1_daily.csv` for the Era 2 (2023–Oct 2024) daily-resolution pre-check; `study2_scada.csv` (56,988 rows × 164 cols, 96 slots/day, Nov 2024–present) for the Era 3 live model.
 
 **Targets (two, sharing most feature engineering):**
 1. Binary — did a frequency violation (Hz outside [49.7, 50.2]) occur, predicted **1–4 slots (15–60 min) ahead**, not just classified retrospectively.

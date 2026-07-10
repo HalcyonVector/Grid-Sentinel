@@ -1,13 +1,14 @@
 """
 build_data_dict.py -- Generate the Grid-Sentinel data dictionary.
 
-Reads column names from the three output CSVs and writes
-Dataset/data_dictionary.xlsx. The workbook has four sheets:
+Reads column names from the four output CSVs and writes
+Dataset/data_dictionary.xlsx. The workbook has five sheets:
 
     study1_daily    -- 144 columns from File2_Raw parsings
     study2_scada    -- 164 columns from File3_Raw parsings (15-min slot level)
     study1_hourly   -- 151 columns (study1_daily PSP cols joined onto hourly load)
-    master          -- Union of all unique column names across the three datasets
+    study3_states   -- 10 columns, section C state-level power supply position (long format)
+    master          -- Union of all unique column names across the four datasets
 
 Each sheet has the columns:
     column_name, datasets, unit, source_section, schema_start_date, notes
@@ -31,6 +32,7 @@ DATASET_DIR = REPO_ROOT / "Dataset"
 STUDY1_D = DATASET_DIR / "study1_daily.csv"
 STUDY1_H = DATASET_DIR / "study1_hourly.csv"
 STUDY2   = DATASET_DIR / "study2_scada.csv"
+STUDY3   = DATASET_DIR / "study3_states.csv"
 OUT_XLSX = DATASET_DIR / "data_dictionary.xlsx"
 
 # ── Region/country abbreviation maps (for generated descriptions) ─────────────
@@ -69,6 +71,7 @@ DATE_SOLAR_HR   = "2023-04-01"   # solar/nonsolar peak-hour section
 DATE_GODDA      = "2023-04-01"   # Adani Godda plant export to Bangladesh
 DATE_SCADA      = "2024-11-04"   # first date in study2_scada
 DATE_HOURLY     = "2019-01-01"   # first date in Kaggle hourly load file
+DATE_STATES     = "2018-12-31"   # first date in study3_states
 
 # ── Section labels from PSP report ────────────────────────────────────────────
 SEC_A    = "Section A (National Overview)"
@@ -77,6 +80,7 @@ SEC_IR   = "IR-Line table (Section B appendix)"
 SEC_XB   = "Cross-border table (Section B appendix)"
 SEC_SCADA = "TimeSeries sheet (SCADA)"
 SEC_KAGGLE = "Kaggle India Hourly Load dataset"
+SEC_STATES = "Section C (Power Supply Position in States)"
 SEC_ID   = "Identifier"
 
 # ── Master knowledge table ────────────────────────────────────────────────────
@@ -285,6 +289,34 @@ _add("Southern Region Hourly Demand",    "MW", SEC_KAGGLE, DATE_HOURLY,
 _add("North-Eastern Region Hourly Demand","MW", SEC_KAGGLE, DATE_HOURLY,
      "North-Eastern Region hourly demand from the Kaggle dataset.")
 
+# study3_states columns (long format -- one row per state/UT/entity per day)
+_add("region", "NR/WR/SR/ER/NER", SEC_STATES, DATE_STATES,
+     "Region the state/UT/entity belongs to. Resolved from a static lookup table "
+     "(Scrapings/parse_psp_states.py's STATE_TO_REGION), not read positionally from "
+     "the source report -- the report's own region label is a merged cell that lands "
+     "on an inconsistent row per group, so it can't be trusted directly.")
+_add("state", "name", SEC_STATES, DATE_STATES,
+     "State, UT, or grid entity name (also includes distinct bulk-consumer/railway "
+     "drawal entities NLDC reports alongside states, e.g. 'Railways_NR ISTS'). "
+     "Normalized to one canonical name per entity across the full time range even "
+     "where the underlying administrative name changed (e.g. J&K's Aug 2019 split "
+     "into J&K + Ladakh UTs, Puducherry's older 'Pondy' abbreviation) -- see "
+     "STATE_NAME_ALIASES for the exact mapping.")
+_add("max_demand_met_mw", "MW", SEC_STATES, DATE_STATES,
+     "Maximum demand met by this state/entity during the day.")
+_add("shortage_max_demand_mw", "MW", SEC_STATES, DATE_STATES,
+     "Shortage during the state/entity's maximum demand.")
+_add("energy_met_mu", "MU", SEC_STATES, DATE_STATES,
+     "Energy met (consumed) by this state/entity over the reporting day.")
+_add("drawal_schedule_mu", "MU", SEC_STATES, DATE_STATES,
+     "Scheduled power drawal for this state/entity.")
+_add("od_ud_mu", "MU", SEC_STATES, DATE_STATES,
+     "Overdrawal(+)/Underdrawal(-) relative to the scheduled drawal.")
+_add("max_od_mw", "MW", SEC_STATES, DATE_STATES,
+     "Maximum overdrawal during the day.")
+_add("energy_shortage_mu", "MU", SEC_STATES, DATE_STATES,
+     "Energy shortage for this state/entity.")
+
 
 # ── Inference fallback ────────────────────────────────────────────────────────
 
@@ -344,7 +376,7 @@ def _col_widths(df: pd.DataFrame) -> dict[str, int]:
 
 
 def write_xlsx(output: Path) -> None:
-    missing = [p for p in [STUDY1_D, STUDY1_H, STUDY2] if not p.exists()]
+    missing = [p for p in [STUDY1_D, STUDY1_H, STUDY2, STUDY3] if not p.exists()]
     if missing:
         print(f"  ERROR: missing dataset file(s): {[str(p) for p in missing]}")
         print("  Run build_all.py first.")
@@ -353,15 +385,17 @@ def write_xlsx(output: Path) -> None:
     cols_d = _read_cols(STUDY1_D)
     cols_h = _read_cols(STUDY1_H)
     cols_2 = _read_cols(STUDY2)
+    cols_3 = _read_cols(STUDY3)
 
     df_d = _build_sheet(cols_d, ["study1_daily"])
     df_2 = _build_sheet(cols_2, ["study2_scada"])
     df_h = _build_sheet(cols_h, ["study1_hourly"])
+    df_3 = _build_sheet(cols_3, ["study3_states"])
 
     # Master sheet: union of all unique columns, listing which datasets include each
     all_cols_ordered: list[str] = []
     seen: set[str] = set()
-    for col in cols_d + cols_2 + cols_h:
+    for col in cols_d + cols_2 + cols_h + cols_3:
         if col not in seen:
             all_cols_ordered.append(col)
             seen.add(col)
@@ -371,10 +405,12 @@ def write_xlsx(output: Path) -> None:
         in_d = col in cols_d
         in_2 = col in cols_2
         in_h = col in cols_h
+        in_3 = col in cols_3
         ds_list = []
         if in_d: ds_list.append("study1_daily")
         if in_2: ds_list.append("study2_scada")
         if in_h: ds_list.append("study1_hourly")
+        if in_3: ds_list.append("study3_states")
         unit, section, start, notes = _lookup(col)
         master_rows.append({
             "column_name":       col,
@@ -392,6 +428,7 @@ def write_xlsx(output: Path) -> None:
             ("study1_daily",  df_d),
             ("study2_scada",  df_2),
             ("study1_hourly", df_h),
+            ("study3_states", df_3),
             ("master",        df_master),
         ]:
             df.to_excel(writer, sheet_name=sheet_name, index=False)
@@ -411,6 +448,7 @@ def write_xlsx(output: Path) -> None:
             ("study1_daily",  df_d),
             ("study2_scada",  df_2),
             ("study1_hourly", df_h),
+            ("study3_states", df_3),
             ("master",        df_master),
         ]:
             filled = (df["notes"] != "").sum()
