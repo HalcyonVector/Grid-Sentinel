@@ -2,11 +2,11 @@
 build_all.py -- Single-command rebuild for all Grid-Sentinel datasets.
 
 Runs in order:
-  1. Dataset/Raw/File1_Raw  -> f1_daily.csv                        (parse_psp_pdf_xls_file1.py)
+  1. Dataset/Raw/File1_Raw  -> tmp/f1_daily.csv                     (parse_psp_pdf_xls_file1.py)
   2. Dataset/Raw/File2_Raw  -> Dataset/study1_daily.csv             (parse_psp_pdf_xls_file2.py)
   3. Dataset/Raw/File2_Raw  -> Dataset/study3_states.csv            (parse_psp_states.py)
   4. Dataset/Raw/File3_Raw  -> Dataset/study2_scada.csv             (parse_psp_xls_pdf_file3.py long)
-  5. f1_daily + Reference/hourlyLoadDataIndia.xlsx
+  5. tmp/f1_daily.csv + Reference/hourlyLoadDataIndia.xlsx
                -> Dataset/study1_hourly.csv             (in-process pandas join)
 
 Steps 1-4 run as subprocesses so each parser's stdout flows straight to the console.
@@ -52,7 +52,8 @@ FILE1_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File1_Raw"
 FILE2_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File2_Raw"
 FILE3_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File3_Raw"
 
-F1_DAILY     = REPO_ROOT / "f1_daily.csv"
+TMP_DIR      = REPO_ROOT / "tmp"
+F1_DAILY     = TMP_DIR / "f1_daily.csv"
 HOURLY_SRC   = REPO_ROOT / "Reference" / "hourlyLoadDataIndia.xlsx"
 
 OUT_STUDY1_D = DATASET_DIR / "study1_daily.csv"
@@ -188,6 +189,7 @@ def main():
         args.skip_file1 = args.skip_file2 = args.skip_file3 = args.skip_states = True
 
     DATASET_DIR.mkdir(exist_ok=True)
+    TMP_DIR.mkdir(exist_ok=True)
     start = datetime.now()
     print(f"\n{'='*60}")
     print(f"  Grid-Sentinel -- build_all.py -- {start.strftime('%Y-%m-%d %H:%M')}")

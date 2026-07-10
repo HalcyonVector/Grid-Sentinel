@@ -1,7 +1,7 @@
 # Notes: validate.py
 
-**Script:** `validate.py` (repo root)
-**Purpose:** Post-build integrity check for all three Grid-Sentinel output datasets. Run this after every full or partial rebuild to confirm no regressions were introduced.
+**Script:** `Pipeline/validate.py`
+**Purpose:** Post-build integrity check for all four Grid-Sentinel output datasets. Run this after every full or partial rebuild to confirm no regressions were introduced.
 
 ---
 
@@ -10,10 +10,11 @@
 Run after any call to `build_all.py` or `Scrapings/update_live.py`. Can also be run on demand to inspect the current state of the datasets without rebuilding them.
 
 ```
-python validate.py              # check all three datasets
-python validate.py --only study1
-python validate.py --only study2
-python validate.py --only hourly
+python Pipeline/validate.py              # check all four datasets
+python Pipeline/validate.py --only study1
+python Pipeline/validate.py --only study2
+python Pipeline/validate.py --only study3
+python Pipeline/validate.py --only hourly
 ```
 
 Exit code 0 means no FAILs. Exit code 1 means at least one check failed.
@@ -59,6 +60,17 @@ The 7 IR corridors checked are: ER-NR, ER-WR, ER-SR, ER-NER, NER-NR, WR-NR, WR-S
 | Days not exactly 96 slots | WARN | Informational count only |
 | `freq_hz` range | WARN | Values must be within [47, 52] Hz |
 
+### study3_states
+
+| Check | Level if triggered | Threshold |
+|-------|--------------------|-----------|
+| Column count | FAIL | Must equal 10 |
+| Row count | FAIL | Must be >= 99,000 |
+| Duplicate (date, state) pairs | FAIL | Zero allowed |
+| Data freshness | WARN | Latest date must be within 5 days of today |
+| Every row has a valid region | FAIL | `region` must be non-null and one of NR/WR/SR/ER/NER — a null here means `parse_psp_states.py`'s `STATE_TO_REGION` map is missing an entity, see its notes file |
+| Consistent state count per day | WARN | Flags any day with more than 3 fewer states than the typical (mode) count — usually means that date's section C table wasn't fully parsed |
+
 ### study1_hourly
 
 | Check | Level if triggered | Threshold |
@@ -71,7 +83,7 @@ The 7 IR corridors checked are: ER-NR, ER-WR, ER-SR, ER-NER, NER-NR, WR-NR, WR-S
 
 ## Baseline values
 
-The baselines (minimum row counts, exact column counts) are hardcoded in the script. They reflect the dataset state as of 2026-07-01. As daily data accumulates, row counts will grow above these baselines. Column counts should remain fixed unless a parser is modified to add or remove fields.
+The baselines (minimum row counts, exact column counts) are hardcoded in the script. They reflect the dataset state as of 2026-07-01 for the original three datasets, and 2026-07-10 for `study3_states` (added that day). As daily data accumulates, row counts will grow above these baselines. Column counts should remain fixed unless a parser is modified to add or remove fields.
 
 If a parser change intentionally adds or removes columns, update `BASELINE_COLS` in `validate.py` to match.
 
@@ -85,6 +97,12 @@ If a parser change intentionally adds or removes columns, update `BASELINE_COLS`
 
 ---
 
-## Known col count discrepancy
+## Col count discrepancy — resolved 2026-07-10
 
-The roadmap (Phase 0, written 2026-06-24) states study2_scada has 165 columns. The actual file has 164. The baseline in `validate.py` uses 164 (the observed count). If the discrepancy is traced to a missing column that should be restored, update both the parser and `BASELINE_COLS["study2_scada"]`.
+Earlier roadmap prose (Phase 0, 2026-06-24) stated study2_scada has 165 columns while the actual file has 164; this note used to flag it as untraced. Resolved by direct column diff: `study2_scada` = all 144 `study1_daily` columns (verified present, none missing) + exactly 20 real-time-only columns (`time`, `hhmm`, `freq_hz`, `demand_met_mw`, per-source real-time generation, `net_demand_met_mw`, `total_gen_mw`, `net_trans_exchange_mw`, 6 `time_max_demand_met_*` columns) = 164 exactly. The "165" was a stale pre-build estimate, not a missing column — no action needed.
+
+---
+
+## Adversarial audit, 2026-07-10
+
+Beyond running this script, the full pipeline was independently re-verified by re-deriving evidence rather than trusting prior documentation: 74 field-by-field checks against raw PDF/XLS source across 2 dates not covered by the original spot-check log (0 mismatches), 2 new confirmed-irreducible gap dates found while doing so, a real duplicate-date case traced and confirmed harmless, and all three `update_live.py` append functions independently tested by removing a date and re-appending. See `ROADMAP.md`'s "Audit: Phase 0-1 re-verification" section for the full account, including the one real bug this pass found (`build_data_dict.py` silently missing `study3_states`, since fixed).
