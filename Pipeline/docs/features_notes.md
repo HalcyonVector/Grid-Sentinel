@@ -7,6 +7,12 @@
 
 ---
 
+## In plain English
+
+Before a computer can learn to predict tomorrow's electricity demand, the raw daily numbers need to be turned into useful clues — things like "what was demand on this exact day last week" or "is today a weekend" (demand is lower on weekends). This file is where all of that clue-building logic lives, written once and reused both when we train the model and later when it makes real predictions — so the model is never trained one way and used a different way by accident.
+
+---
+
 ## Why this file exists
 
 Per the Phase 3 design (see `ROADMAP.md`), every reusable transform must live in `features.py`, never pasted inline into a notebook — this is what lets `03_baseline.ipynb`'s training-time feature construction and a future `predict.py`'s inference-time feature construction stay identical by construction instead of by discipline.

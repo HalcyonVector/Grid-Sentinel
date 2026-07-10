@@ -5,6 +5,12 @@
 
 ---
 
+## In plain English
+
+After the datasets get rebuilt or updated, how do we know nothing broke? This script is the checkup. It looks for obvious red flags — a missing day, the same date appearing twice, numbers that should add up but don't, a value that's physically impossible — and gives a clear pass/warning/fail report. If it fails, the data shouldn't be trusted or published until the problem is fixed.
+
+---
+
 ## When to run
 
 Run after any call to `build_all.py` or `Scrapings/update_live.py`. Can also be run on demand to inspect the current state of the datasets without rebuilding them.

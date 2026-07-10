@@ -5,6 +5,12 @@
 
 ---
 
+## In plain English
+
+This is the script that keeps the dataset alive. Every day, without anyone touching a keyboard, a scheduled job runs this script — it goes to the grid operator's website, grabs that day's new report, and adds it to our four datasets. Without this, the dataset would be frozen at whatever day we last updated it by hand.
+
+---
+
 ## Why this file exists
 
 `build_all.py` re-parses the entire raw archive (~2,700+ files, growing daily) every time — 15-45 minutes per dataset. That's fine for a local rebuild after a parser fix, but far too slow to run on every CI trigger just to add one new day's data. `update_live.py` instead downloads and parses exactly one file, appends the resulting rows to the existing CSVs, and exits — seconds, not minutes.

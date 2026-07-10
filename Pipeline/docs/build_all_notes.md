@@ -5,6 +5,12 @@
 
 ---
 
+## In plain English
+
+This is the "rebuild everything from scratch" button. We download the grid operator's daily reports (thousands of them, going back to 2018) and this script reads every single one and turns them into the four clean spreadsheet files that make up this project's public dataset. You'd run this after fixing a bug in how we read the reports, so the whole dataset gets corrected everywhere at once, not just for new days going forward.
+
+---
+
 ## What it does
 
 Runs five steps in sequence. Steps 1 through 4 call the parser scripts as subprocesses so their output flows directly to the console. Step 5 runs in-process.

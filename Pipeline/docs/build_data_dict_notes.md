@@ -5,6 +5,12 @@
 
 ---
 
+## In plain English
+
+Our datasets have 180 columns total, with names like `ir_er_nr_import_mu` or `freq_pct_499_5005` — meaningless to anyone who didn't build the parser. This script produces a glossary: one row per column, explaining in plain terms what it measures, what unit it's in (megawatts? percent?), which report section it came from, and any quirks to know about. It's what makes the dataset usable by someone other than us — a Kaggle stranger, a future collaborator, or us in six months.
+
+---
+
 ## Output
 
 `Dataset/data_dictionary.xlsx` with five sheets:

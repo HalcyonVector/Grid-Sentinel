@@ -5,6 +5,12 @@
 
 ---
 
+## In plain English
+
+Every day's report from the grid operator includes a table breaking down power supply numbers state-by-state (Punjab, Maharashtra, Tamil Nadu, and so on — about 40 entities). Nothing in this project was reading that table before — this script's entire job is to pull it out of each day's report and save it as its own dataset (`study3_states.csv`), so anyone interested in state-level detail, not just the national picture, has something to work with.
+
+---
+
 ## Why this file exists
 
 Section C of every NLDC daily PSP report lists ~40 state/UT/grid-entity rows (max demand met, shortage, energy met, drawal schedule, OD/UD, max OD, energy shortage). It was never parsed by the main pipeline — `parse_psp_pdf_xls_file1.py`/`file2.py` only cover Sections A, B, D-H. Built 2026-07-10 to close out Phase 2's remaining low-priority task.
