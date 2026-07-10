@@ -1,0 +1,17 @@
+name: grid-sentinel-ml
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas
+  - numpy
+  - scikit-learn
+  - lightgbm
+  - pytorch
+  - matplotlib
+  - plotly
+  - jupyterlab
+  - pip
+  - pip:
+      - kaggle
