@@ -1,6 +1,6 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, 74 fresh field checks with 0 mismatches, build_data_dict.py gap found and fixed; data_dictionary.xlsx now committed and added to the Kaggle push; ML/Study1/predict.py built and wired into CI, closing Phase 3's last deferred item; found and fixed a real gap in daily_scrape.yml where study3_states.csv was never actually being committed)_
+_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified, plus ML/Study1/predict.py built and wired into CI closing Phase 3's last deferred item; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, build_data_dict.py gap found and fixed, data_dictionary.xlsx committed and added to the Kaggle push, a real gap in daily_scrape.yml where study3_states.csv was never being committed found and fixed, and the original 8-date spot-check fully re-derived from scratch — ~280 field comparisons, 0 mismatches)_
 
 ---
 
@@ -217,7 +217,11 @@ After finding real bugs in Phase 2 and Phase 3 by actually re-testing their clai
 
 - `Dataset/data_dictionary.xlsx` has never been committed to git and isn't part of the Kaggle push, despite Phase 1c calling it "published." Needs an explicit decision (see 1c above).
 
-**Not independently re-audited:** the original Phase 0 spot-check log (8 dates × 44 fields) and the full 70-gap enumeration were not re-derived from scratch in full — this audit's fresh checks (74 fields, 2 new gap dates, 1 dedup case) are additional evidence layered on top of the original claims, not a full re-run of them. Given zero discrepancies found across everything actually re-tested, confidence in the untested remainder is high but not absolute.
+**Update, 2026-07-10 (later same day) — the original 8-date spot-check has now been fully re-derived from scratch, not just supplemented.** All 8 original dates (2019-03-15, 2020-06-07, 2021-03-22, 2022-08-11, 2023-02-18, 2023-10-06, 2024-01-02, 2025-01-21) were independently re-checked: for each, the correct raw source file was re-located (accounting for the subject-line-date vs. filename-date offset quirks documented elsewhere in this roadmap), the raw text/table dumped, and 29-44 comparable fields per date read by hand and checked against the CSV — not by re-running the parser and comparing its output to itself, but by reading the original PDF/XLS content directly. **Roughly 280 individual field comparisons across all 8 dates, zero mismatches.** Full detail in the updated "Appendix: Spot-check log" below.
+
+One genuinely new finding along the way: the 2022-08-11 PDF has an internal inconsistency in NLDC's own source document — Section A's hydro generation total (766 MU) doesn't match Section G's hydro total (775 MU) for the same day. Confirmed the parser correctly preserves this distinction (`hydro_gen_total_mu` = 766 from Section A, `gen_hydro_mu` = 775 from Section G) rather than incorrectly reconciling the two — each field faithfully reflects its own source section, exactly as it should.
+
+The full 70-gap enumeration was not re-derived exhaustively (that would mean checking all 70 dates individually) — but 2 additional gap dates (2020-11-13, 2020-11-15) were found and confirmed to match the documented category during this process, which is real corroborating evidence rather than an assumption.
 
 ---
 
@@ -694,17 +698,19 @@ Not yet decided — Overleaf (LaTeX) is the typical choice for IEEE/Elsevier ven
 | — | IR-Line not parsed for 2023–24 | `_xls_parse_ir_line` backported to file1/file2 → 21 `ir_*` cols now emitted for every XLS with an IR-Line sheet |
 | — | Duplicate-date rows | `build_dataset` dedups by date, keeping richest (most non-null) row |
 
-## Appendix: Spot-check log (Phase 0, 2026-06-24)
+## Appendix: Spot-check log
 
-8 dates × 44 field comparisons — **0 mismatches**.
+**Original pass (Phase 0, 2026-06-24):** 8 dates × 44 field comparisons — 0 mismatches. Methodology not preserved in detail (this table only, no field-level breakdown).
 
-| Date | Era | Result |
-|------|-----|--------|
-| 2019-03-15 | PDF | ✓ |
-| 2020-06-07 | PDF | ✓ |
-| 2021-03-22 | PDF | ✓ |
-| 2022-08-11 | PDF | ✓ |
-| 2023-02-18 | XLS | ✓ |
-| 2023-10-06 | XLS | ✓ |
-| 2024-01-02 | XLS | ✓ |
-| 2025-01-21 | XLS | ✓ |
+**Full independent re-derivation (2026-07-10):** every date below re-checked from scratch — raw source file re-located, text/tables dumped and read by hand, ~29-44 comparable fields per date checked directly against the CSV (not against the parser's own output). ~280 total field comparisons, 0 mismatches.
+
+| Date | Era | Fields checked | Result | Notes |
+|------|-----|-----------------|--------|-------|
+| 2019-03-15 | PDF | 29 | ✓ | |
+| 2020-06-07 | PDF | 31 | ✓ | |
+| 2021-03-22 | PDF | 31 | ✓ | |
+| 2022-08-11 | PDF | 31 | ✓ | Source PDF itself has Section A vs. Section G hydro-total mismatch (766 vs. 775 MU) — confirmed the parser correctly preserves both, doesn't reconcile them |
+| 2023-02-18 | XLS | 33 | ✓ | Pre-dates cross-border sheet onset — `xb_*` correctly null (no CrossBorder sheet exists in this file) |
+| 2023-10-06 | XLS | 41 | ✓ | Includes full cross-border + IR-line era fields |
+| 2024-01-02 | XLS | 37 | ✓ | |
+| 2025-01-21 | XLS | 43 | ✓ | Includes full cross-border era fields |
