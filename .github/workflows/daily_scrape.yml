@@ -93,6 +93,7 @@ jobs:
           cp Dataset/study1_daily.csv \
              Dataset/study2_scada.csv \
              Dataset/study1_hourly.csv \
+             Dataset/study3_states.csv \
              Dataset/README.md \
              Dataset/dataset-metadata.json \
              /tmp/kaggle_push/

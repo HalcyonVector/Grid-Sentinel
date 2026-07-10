@@ -2,7 +2,7 @@
 
 **Structured, analysis-ready data scraped from the National Load Despatch Centre's (NLDC) daily Power System Position (PSP) reports — updated automatically every day.**
 
-Covers the Indian national grid from 2018 onward across three complementary datasets: daily grid features, hourly regional load, and 15-minute SCADA frequency data.
+Covers the Indian national grid from 2018 onward across four complementary datasets: daily grid features, hourly regional load, 15-minute SCADA frequency data, and daily state-level power supply position.
 
 ---
 
@@ -10,9 +10,10 @@ Covers the Indian national grid from 2018 onward across three complementary data
 
 | File | Rows | Cols | Period | Granularity |
 |------|------|------|--------|-------------|
-| `study1_daily.csv` | 2,660 | 144 | Dec 2018 → present | 1 row per day |
+| `study1_daily.csv` | 2,678 | 144 | Dec 2018 → present | 1 row per day |
 | `study1_hourly.csv` | 46,728 | 151 | Jan 2019 → Apr 2024 | 1 row per hour |
-| `study2_scada.csv` | 55,068 | 165 | Nov 2024 → present | 1 row per 15-min block |
+| `study2_scada.csv` | 56,892 | 164 | Nov 2024 → present | 1 row per 15-min block |
+| `study3_states.csv` | 99,208 | 10 | Dec 2018 → present | 1 row per state/UT/entity per day |
 
 ---
 
@@ -88,6 +89,29 @@ One row per 15-minute block (96 per day). Built from the `TimeSeries` sheet in N
 
 ---
 
+### study3_states.csv — Daily State-Level Power Supply Position
+
+One row per state/UT/entity per day (~37 per day), long format. Built from NLDC's §C "Power Supply Position in States" table, present in both the PDF (2019–2022) and XLS (2023+) report eras.
+
+**Columns:**
+
+| Column | Description |
+|--------|-------------|
+| `date` | Calendar date |
+| `region` | NR / WR / SR / ER / NER |
+| `state` | State, UT, or grid entity name (e.g. also includes distinct bulk-consumer/railway drawal entities NLDC reports alongside states) |
+| `max_demand_met_mw` | Maximum demand met that day |
+| `shortage_max_demand_mw` | Shortage during maximum demand |
+| `energy_met_mu` | Energy met |
+| `drawal_schedule_mu` | Scheduled drawal |
+| `od_ud_mu` | Overdrawal(+)/Underdrawal(-) |
+| `max_od_mw` | Maximum overdrawal |
+| `energy_shortage_mu` | Energy shortage |
+
+State naming changed over the dataset's history (e.g. J&K's Aug 2019 split into J&K and Ladakh UTs, Puducherry's older "Pondy" abbreviation) — these are normalized to one consistent name per entity across the full time range so the series doesn't fragment; see the scraper's `STATE_NAME_ALIASES` for the exact mapping.
+
+---
+
 ## Known Gaps & Limitations
 
 **study1_daily / study1_hourly — 70 missing dates (all irreducible):**
@@ -106,11 +130,13 @@ A small number of days have 95 or 98 slots instead of 96 (DST / file-truncation 
 
 **IR-Line and CrossBorder columns** are `NaN` before ~2023 — these sections were not published in earlier reports.
 
+**study3_states — one missing date:** 2019-05-10 has no rows because that day's source PDF was published entirely in Hindi/Devanagari (the only report in the archive rendered this way), and the state-section parser's header match is English-only. `study1_daily`/`study1_hourly` are unaffected — their parsers don't depend on that same text match.
+
 ---
 
 ## Update Schedule
 
-`study1_daily` and `study2_scada` are updated automatically every day via GitHub Actions. The workflow downloads the latest PSP file from grid-india.in, parses it, appends new rows, and pushes here.
+`study1_daily`, `study2_scada`, and `study3_states` are updated automatically every day via GitHub Actions. The workflow downloads the latest PSP file from grid-india.in, parses it, appends new rows, and pushes here.
 
 `study1_hourly` has a fixed end date of April 2024 (the hourly load source dataset is not live).
 

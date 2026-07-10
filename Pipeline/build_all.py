@@ -4,12 +4,13 @@ build_all.py -- Single-command rebuild for all Grid-Sentinel datasets.
 Runs in order:
   1. Dataset/Raw/File1_Raw  -> f1_daily.csv                        (parse_psp_pdf_xls_file1.py)
   2. Dataset/Raw/File2_Raw  -> Dataset/study1_daily.csv             (parse_psp_pdf_xls_file2.py)
-  3. Dataset/Raw/File3_Raw  -> Dataset/study2_scada.csv             (parse_psp_xls_pdf_file3.py long)
-  4. f1_daily + Reference/hourlyLoadDataIndia.xlsx
+  3. Dataset/Raw/File2_Raw  -> Dataset/study3_states.csv            (parse_psp_states.py)
+  4. Dataset/Raw/File3_Raw  -> Dataset/study2_scada.csv             (parse_psp_xls_pdf_file3.py long)
+  5. f1_daily + Reference/hourlyLoadDataIndia.xlsx
                -> Dataset/study1_hourly.csv             (in-process pandas join)
 
-Steps 1-3 run as subprocesses so each parser's stdout flows straight to the console.
-Step 4 is in-process: left-joins f1_daily onto hourly rows (each daily PSP row
+Steps 1-4 run as subprocesses so each parser's stdout flows straight to the console.
+Step 5 is in-process: left-joins f1_daily onto hourly rows (each daily PSP row
 broadcasts onto all 24 hourly rows for that date).
 
 After all steps, prints row x col counts, date range, overall null %, and the 8
@@ -26,11 +27,12 @@ Usage:
   python Pipeline/build_all.py --skip-file1       # skip File1 parse (f1_daily.csv already exists)
   python Pipeline/build_all.py --skip-file2       # skip File2 parse
   python Pipeline/build_all.py --skip-file3       # skip File3 parse
+  python Pipeline/build_all.py --skip-states      # skip study3_states parse
   python Pipeline/build_all.py --skip-hourly      # skip hourly join
   python Pipeline/build_all.py --only-hourly      # only redo the hourly join
 
   # Example: rebuilt only study2_scada (new files added to Dataset/Raw/File3_Raw):
-  python Pipeline/build_all.py --skip-file1 --skip-file2
+  python Pipeline/build_all.py --skip-file1 --skip-file2 --skip-states
 """
 
 import argparse
@@ -56,6 +58,7 @@ HOURLY_SRC   = REPO_ROOT / "Reference" / "hourlyLoadDataIndia.xlsx"
 OUT_STUDY1_D = DATASET_DIR / "study1_daily.csv"
 OUT_STUDY1_H = DATASET_DIR / "study1_hourly.csv"
 OUT_STUDY2   = DATASET_DIR / "study2_scada.csv"
+OUT_STUDY3   = DATASET_DIR / "study3_states.csv"
 
 # -- Expected baseline row counts (from roadmap) -------------------------------
 # Allowed to grow (new daily data added), but never shrink below these.
@@ -63,6 +66,7 @@ BASELINES = {
     "study1_daily":  2660,
     "study1_hourly": 46728,
     "study2_scada":  55068,
+    "study3_states": 99000,
 }
 
 # -- Helpers -------------------------------------------------------------------
@@ -175,12 +179,13 @@ def main():
     parser.add_argument("--skip-file1",  action="store_true", help="Skip File1 -> f1_daily parse")
     parser.add_argument("--skip-file2",  action="store_true", help="Skip File2 -> study1_daily parse")
     parser.add_argument("--skip-file3",  action="store_true", help="Skip File3 -> study2_scada parse")
+    parser.add_argument("--skip-states", action="store_true", help="Skip File2 -> study3_states parse")
     parser.add_argument("--skip-hourly", action="store_true", help="Skip f1_daily + hourly join")
     parser.add_argument("--only-hourly", action="store_true", help="Only run the hourly join (implies --skip-file1/2/3)")
     args = parser.parse_args()
 
     if args.only_hourly:
-        args.skip_file1 = args.skip_file2 = args.skip_file3 = True
+        args.skip_file1 = args.skip_file2 = args.skip_file3 = args.skip_states = True
 
     DATASET_DIR.mkdir(exist_ok=True)
     start = datetime.now()
@@ -210,7 +215,17 @@ def main():
         if not ok:
             errors.append("file2 parse failed")
 
-    # -- Step 3: File3 -> study2_scada -----------------------------------------
+    # -- Step 3: File2 -> study3_states -----------------------------------------
+    if not args.skip_states:
+        ok = _run(
+            [sys.executable, str(SCRAPERS_DIR / "parse_psp_states.py"),
+             str(FILE2_RAW), str(OUT_STUDY3)],
+            "file2->study3_states"
+        )
+        if not ok:
+            errors.append("states parse failed")
+
+    # -- Step 4: File3 -> study2_scada -----------------------------------------
     if not args.skip_file3:
         ok = _run(
             [sys.executable, str(SCRAPERS_DIR / "parse_psp_xls_pdf_file3.py"),
@@ -220,7 +235,7 @@ def main():
         if not ok:
             errors.append("file3 parse failed")
 
-    # -- Step 4: hourly join -----------------------------------------------------
+    # -- Step 5: hourly join -----------------------------------------------------
     if not args.skip_hourly:
         ok = build_study1_hourly()
         if not ok:
@@ -233,6 +248,7 @@ def main():
     _print_summary("study1_daily", OUT_STUDY1_D)
     _print_summary("study2_scada", OUT_STUDY2)
     _print_summary("study1_hourly", OUT_STUDY1_H)
+    _print_summary("study3_states", OUT_STUDY3)
 
     elapsed = datetime.now() - start
     print(f"\n{'='*60}")

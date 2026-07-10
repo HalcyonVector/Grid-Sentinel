@@ -9,6 +9,7 @@ Usage:
     python Pipeline/validate.py                  # run all checks
     python Pipeline/validate.py --only study1    # run only study1_daily checks
     python Pipeline/validate.py --only study2    # run only study2_scada checks
+    python Pipeline/validate.py --only study3    # run only study3_states checks
     python Pipeline/validate.py --only hourly    # run only study1_hourly checks
 """
 
@@ -26,19 +27,24 @@ DATASET_DIR = REPO_ROOT / "Dataset"
 STUDY1_D = DATASET_DIR / "study1_daily.csv"
 STUDY1_H = DATASET_DIR / "study1_hourly.csv"
 STUDY2   = DATASET_DIR / "study2_scada.csv"
+STUDY3   = DATASET_DIR / "study3_states.csv"
 
 # ── Baseline thresholds ───────────────────────────────────────────────────────
 BASELINE_ROWS = {
     "study1_daily":  2660,
     "study1_hourly": 46728,
     "study2_scada":  56796,  # 2026-07-07: full rebuild from all raw XLS files after discovering ~40% of legacy date labels were wrong (day/month transposed)
+    "study3_states": 99000,  # 2026-07-10: first full build, ~2678 dates x ~37 states/UTs/entities
 }
 
 BASELINE_COLS = {
     "study1_daily":  144,
     "study1_hourly": 151,
     "study2_scada":  164,
+    "study3_states": 10,
 }
+
+REGIONS = ["NR", "WR", "SR", "ER", "NER"]
 
 # Maximum days a dataset's latest date is allowed to lag behind today
 # before a warning is raised. Accounts for weekends and the 1-day
@@ -281,6 +287,72 @@ def check_study1_hourly() -> None:
         warn(label, "no date or datetime column found")
 
 
+# ── study3_states checks ──────────────────────────────────────────────────────
+
+def check_study3_states() -> None:
+    label = "study3_states"
+    df = _load(STUDY3, label)
+    if df is None:
+        return
+
+    # Column count
+    n_cols = len(df.columns)
+    expected_cols = BASELINE_COLS[label]
+    if n_cols != expected_cols:
+        fail(label, f"column count changed: expected {expected_cols}, got {n_cols}")
+    else:
+        ok(label, f"column count = {n_cols}")
+
+    # Row count
+    n_rows = len(df)
+    if n_rows < BASELINE_ROWS[label]:
+        fail(label, f"row count {n_rows:,} is below baseline {BASELINE_ROWS[label]:,}")
+    else:
+        ok(label, f"row count = {n_rows:,}")
+
+    # Duplicate (date, state) pairs
+    if "date" in df.columns and "state" in df.columns:
+        dupes = df.duplicated(subset=["date", "state"]).sum()
+        if dupes:
+            fail(label, f"{dupes} duplicate (date, state) pair(s)")
+        else:
+            ok(label, "no duplicate (date, state) pairs")
+
+    # Data freshness
+    if "date" in df.columns:
+        latest = pd.to_datetime(df["date"]).max().date()
+        lag = (date.today() - latest).days
+        if lag > MAX_LAG_DAYS:
+            warn(label, f"latest date is {latest} ({lag} days ago)")
+        else:
+            ok(label, f"latest date = {latest} ({lag} day(s) lag)")
+
+    # Every state should resolve to a valid region -- if any are null, the
+    # majority-vote resolver in parse_psp_states.py found no label anywhere
+    # in the archive for that state name (see its warning output).
+    if "region" in df.columns:
+        n_null_region = df["region"].isna().sum()
+        bad_region = df.loc[~df["region"].isin(REGIONS) & df["region"].notna(), "region"].unique()
+        if n_null_region:
+            fail(label, f"{n_null_region} row(s) with no resolved region")
+        elif len(bad_region):
+            fail(label, f"{len(bad_region)} row(s) with an invalid region value: {list(bad_region)}")
+        else:
+            ok(label, "all rows have a valid region")
+
+    # States per day should be stable -- a day with far fewer states than
+    # usual likely means the section C table wasn't fully parsed for that date.
+    if "date" in df.columns and "state" in df.columns:
+        per_day = df.groupby("date")["state"].nunique()
+        typical = per_day.mode().iat[0] if not per_day.mode().empty else None
+        if typical is not None:
+            low_days = per_day[per_day < typical - 3]
+            if len(low_days):
+                warn(label, f"{len(low_days)} day(s) with fewer than {typical - 3} states (typical: {typical})")
+            else:
+                ok(label, f"all days have a consistent state count (typical: {typical})")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -289,7 +361,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--only",
-        choices=["study1", "study2", "hourly"],
+        choices=["study1", "study2", "study3", "hourly"],
         help="Run checks for one dataset only.",
     )
     args = parser.parse_args()
@@ -302,12 +374,16 @@ def main() -> None:
         check_study1_daily()
     elif args.only == "study2":
         check_study2_scada()
+    elif args.only == "study3":
+        check_study3_states()
     elif args.only == "hourly":
         check_study1_hourly()
     else:
         check_study1_daily()
         print()
         check_study2_scada()
+        print()
+        check_study3_states()
         print()
         check_study1_hourly()
 

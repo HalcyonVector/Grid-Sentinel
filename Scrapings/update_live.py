@@ -4,6 +4,7 @@ update_live.py -- Daily incremental update for Grid-Sentinel live pipeline.
 Downloads today's PSP file from NLDC, parses it, and appends new rows to:
   - Dataset/study1_daily.csv   (one daily row)
   - Dataset/study2_scada.csv   (96 fifteen-minute rows, only if TimeSeries sheet present)
+  - Dataset/study3_states.csv  (~37 state/UT/entity rows, section C)
 
 Exit codes:
   0  -- success, CSVs updated
@@ -29,6 +30,7 @@ REPO_ROOT    = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 STUDY1_CSV   = REPO_ROOT / "Dataset" / "study1_daily.csv"
 STUDY2_CSV   = REPO_ROOT / "Dataset" / "study2_scada.csv"
+STUDY3_CSV   = REPO_ROOT / "Dataset" / "study3_states.csv"
 FILE2_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File2_Raw"
 FILE3_RAW    = REPO_ROOT / "Dataset" / "Raw" / "File3_Raw"
 
@@ -125,6 +127,54 @@ def append_study1(raw_file: Path) -> bool:
     return True
 
 
+def append_study3(raw_file: Path) -> bool:
+    """Parse raw_file's section C states table, append new (date, state) rows to
+    study3_states.csv. Uses the same static STATE_TO_REGION map and
+    STATE_NAME_ALIASES as the full rebuild (parse_psp_states.py) so incremental
+    appends stay consistent with a from-scratch build -- unlike the earlier
+    majority-vote approach, the static map means a single day's rows can be
+    resolved correctly without needing the whole archive present."""
+    from parse_psp_states import (
+        parse_file as parse_states_file, STATE_NAME_ALIASES,
+        STATE_TO_REGION, UNRECOVERABLE_STATE_LABELS, COLS,
+    )
+
+    rows = parse_states_file(str(raw_file))
+    if not rows:
+        print(f"  study3_states: parse_file returned empty for {raw_file.name}")
+        return False
+
+    row_date = str(rows[0]["date"])
+    existing = pd.read_csv(STUDY3_CSV)
+    existing["date"] = pd.to_datetime(existing["date"], format="%Y-%m-%d").dt.strftime("%Y-%m-%d")
+
+    if row_date in existing["date"].values:
+        print(f"  study3_states: {row_date} already present -- skipping.")
+        return False
+
+    new_rows = pd.DataFrame(rows)
+    new_rows["date"] = new_rows["date"].astype(str)
+    new_rows = new_rows[~new_rows["state"].isin(UNRECOVERABLE_STATE_LABELS)]
+    if new_rows.empty:
+        print(f"  study3_states: all rows unrecoverable for {raw_file.name} -- skipping.")
+        return False
+    new_rows["state"] = new_rows["state"].replace(STATE_NAME_ALIASES)
+    new_rows["region"] = new_rows["state"].map(STATE_TO_REGION)
+    unmapped = new_rows.loc[new_rows["region"].isna(), "state"].unique().tolist()
+    if unmapped:
+        print(f"  study3_states: WARNING -- {len(unmapped)} state(s) not in STATE_TO_REGION, "
+              f"row(s) will have a null region until the map is updated: {unmapped}")
+
+    col_order = ["date", "region", "state"] + COLS
+    new_rows = new_rows[col_order]
+
+    updated = pd.concat([existing, new_rows], ignore_index=True)
+    updated = updated.sort_values(["date", "region", "state"]).reset_index(drop=True)
+    updated.to_csv(STUDY3_CSV, index=False)
+    print(f"  study3_states: appended {len(new_rows)} row(s) for {row_date}")
+    return True
+
+
 def append_study2(raw_file: Path) -> bool:
     """Parse raw_file timeseries, append 96 rows to study2_scada.csv. Returns True if rows added."""
     from parse_psp_xls_pdf_file3 import build_timeseries_long
@@ -190,7 +240,7 @@ def append_study2(raw_file: Path) -> bool:
     return True
 
 
-def validate(study1_changed: bool, study2_changed: bool):
+def validate(study1_changed: bool, study2_changed: bool, study3_changed: bool = False):
     """Basic sanity checks on the updated CSVs."""
     errors = []
 
@@ -212,6 +262,15 @@ def validate(study1_changed: bool, study2_changed: bool):
         if dups > 0:
             errors.append(f"study2_scada: {dups} duplicate (date, hhmm) rows after append")
 
+    if study3_changed:
+        df3 = pd.read_csv(STUDY3_CSV)
+        dups = df3.duplicated(["date", "state"]).sum()
+        if dups > 0:
+            errors.append(f"study3_states: {dups} duplicate (date, state) rows after append")
+        n_null_region = df3["region"].isna().sum()
+        if n_null_region:
+            errors.append(f"study3_states: {n_null_region} row(s) with no resolved region after append")
+
     if errors:
         for e in errors:
             print(f"  VALIDATION ERROR: {e}")
@@ -230,11 +289,11 @@ def _parse_file_date(path: Path) -> date | None:
         return None
 
 
-def scan_and_parse(lookback_days: int = 10) -> tuple[bool, bool]:
+def scan_and_parse(lookback_days: int = 10) -> tuple[bool, bool, bool]:
     """
     Parse recent raw files in FILE3_RAW not yet reflected in the CSVs.
     Only considers files dated within the last `lookback_days` days.
-    Returns (study1_changed, study2_changed).
+    Returns (study1_changed, study2_changed, study3_changed).
     """
     cutoff = date.today() - timedelta(days=lookback_days)
     all_files = sorted(FILE3_RAW.glob("*_NLDC_PSP*"))
@@ -242,11 +301,12 @@ def scan_and_parse(lookback_days: int = 10) -> tuple[bool, bool]:
 
     if not raw_files:
         print(f"No raw files found in Dataset/Raw/File3_Raw within the last {lookback_days} days.")
-        return False, False
+        return False, False, False
 
     print(f"Scanning {len(raw_files)} file(s) from {cutoff} onward (of {len(all_files)} total).")
     s1_any = False
     s2_any = False
+    s3_any = False
     scan_errors = []
     for raw_file in raw_files:
         print(f"\nParsing {raw_file.name}...")
@@ -262,14 +322,21 @@ def scan_and_parse(lookback_days: int = 10) -> tuple[bool, bool]:
             print(f"  study2_scada: ERROR processing {raw_file.name} -- {e!r} (skipping this file, continuing scan)")
             scan_errors.append((raw_file.name, "study2", repr(e)))
             s2 = False
+        try:
+            s3 = append_study3(raw_file)
+        except Exception as e:
+            print(f"  study3_states: ERROR processing {raw_file.name} -- {e!r} (skipping this file, continuing scan)")
+            scan_errors.append((raw_file.name, "study3", repr(e)))
+            s3 = False
         s1_any = s1_any or s1
         s2_any = s2_any or s2
+        s3_any = s3_any or s3
 
     if scan_errors:
         print(f"\n{len(scan_errors)} file(s) hit errors during scan (see above) -- "
               f"any rows successfully appended before/around them are still kept.")
 
-    return s1_any, s2_any
+    return s1_any, s2_any, s3_any
 
 
 def main():
@@ -289,7 +356,7 @@ def main():
     # ── Scan mode: parse whatever is already in File3_Raw ────────────────────
     if args.scan:
         print("Scan mode: parsing all unparsed files in Dataset/Raw/File3_Raw...")
-        s1_changed, s2_changed = scan_and_parse()
+        s1_changed, s2_changed, s3_changed = scan_and_parse()
     else:
         # ── Download mode: fetch a specific or today's file ──────────────────
         if args.date:
@@ -316,13 +383,14 @@ def main():
         print(f"\nParsing {raw_file.name}...")
         s1_changed = append_study1(raw_file)
         s2_changed = append_study2(raw_file)
+        s3_changed = append_study3(raw_file)
 
-    if not s1_changed and not s2_changed:
+    if not s1_changed and not s2_changed and not s3_changed:
         print("\nNo new data added (already up to date).")
         sys.exit(0)
 
     print("\nRunning validation...")
-    ok = validate(s1_changed, s2_changed)
+    ok = validate(s1_changed, s2_changed, s3_changed)
     if not ok:
         sys.exit(2)
 

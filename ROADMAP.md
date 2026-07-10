@@ -1,6 +1,6 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-10 (Phase 2 merged-blob fix implemented and verified; 2014 bogus-date bug found and fixed; Phase 3 naive-persistence anchor bug found, fixed, and re-verified)_
+_Last updated: 2026-07-10 (Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified)_
 
 ---
 
@@ -12,7 +12,7 @@ Grid-Sentinel is a machine learning project for **predicting and detecting stres
 
 1. **GitHub dashboard** (public, live) — a real-time web dashboard hosted on GitHub Pages that shows both live NLDC data as it comes in and model predictions overlaid. Also includes an interactive explorer of the full historical dataset (2019–present). Intended as a portfolio/résumé artefact.
 2. **Research paper** (conditional) — if model results are strong enough, publish to an IEEE Power & Energy conference or a journal like *Electric Power Systems Research*. Decision deferred until Phase 3/4 outputs are in hand.
-3. **Kaggle dataset** (ongoing) — three cleaned CSVs published and auto-updated daily, serving as a public resource for the broader community.
+3. **Kaggle dataset** (ongoing) — four cleaned CSVs published and auto-updated daily (a fourth, `study3_states.csv`, added in Phase 2), serving as a public resource for the broader community.
 
 ### Two studies
 
@@ -22,6 +22,8 @@ Grid-Sentinel is a machine learning project for **predicting and detecting stres
 | **Study 2 — 15-min frequency-violation classifier** | `study2_scada.csv` | Binary: frequency violation in a 15-min slot? | 55,000+ × 164 | 2024-11-04 → present |
 
 Study 1 also has an hourly variant (`study1_hourly.csv`, 46,728 rows × 151 cols, 2019-01-01 → 2024-04-30) joining PSP daily features with the Kaggle India hourly load data.
+
+A fourth dataset, `study3_states.csv` (99,208 rows × 10 cols, long format — one row per state/UT/entity per day, 2018-12-31 → present), was added in Phase 2 (2026-07-10): NLDC's §C state-level power supply position, not tied to either study's modelling target but published as a standalone resource.
 
 ---
 
@@ -35,7 +37,7 @@ Grid-Sentinel/
 │       ├── File2_Raw/  Full-history PSP files (2019-present), used for study1_daily
 │       └── File3_Raw/  FY2025+ XLS files with TimeSeries sheet, used for study2_scada
 ├── Pipeline/           Build, validate, and data-dictionary scripts
-│   ├── build_all.py        Full rebuild of all three datasets
+│   ├── build_all.py        Full rebuild of all four datasets
 │   ├── validate.py         Post-build integrity checks
 │   ├── build_data_dict.py  Generates Dataset/data_dictionary.xlsx
 │   └── docs/               Notes for each Pipeline script
@@ -45,7 +47,8 @@ Grid-Sentinel/
 │   ├── update_live.py      Incremental append — called by GitHub Actions daily
 │   ├── parse_psp_pdf_xls_file1.py
 │   ├── parse_psp_pdf_xls_file2.py
-│   └── parse_psp_xls_pdf_file3.py
+│   ├── parse_psp_xls_pdf_file3.py
+│   └── parse_psp_states.py     study3_states.csv (§C state-level table, Phase 2)
 ├── logs/               local_download.py run logs (gitignored)
 ├── .github/workflows/  daily_scrape.yml — CI pipeline
 ├── ROADMAP.md
@@ -58,18 +61,19 @@ Grid-Sentinel/
 
 | File | Rows | Cols | Date range | Source |
 |------|------|------|------------|--------|
-| `Dataset/study1_daily.csv` | 2,660 | 144 | 2018-12-31 → 2026-06-18 | `Dataset/Raw/File2_Raw/` |
+| `Dataset/study1_daily.csv` | 2,678 | 144 | 2018-12-31 → present | `Dataset/Raw/File2_Raw/` |
 | `Dataset/study1_hourly.csv` | 46,728 | 151 | 2019-01-01 → 2024-04-30 | `Dataset/Raw/File1_Raw/` + `hourlyLoadDataIndia.xlsx` |
-| `Dataset/study2_scada.csv` | 55,068 | 164 | 2024-11-04 → 2026-06-18 | `Dataset/Raw/File3_Raw/` |
+| `Dataset/study2_scada.csv` | 56,892 | 164 | 2024-11-04 → present | `Dataset/Raw/File3_Raw/` |
+| `Dataset/study3_states.csv` | 99,208 | 10 | 2018-12-31 → present | `Dataset/Raw/File2_Raw/` |
 
 ### Build commands
 
 ```bash
-# Full rebuild (all three datasets)
+# Full rebuild (all four datasets)
 python Pipeline/build_all.py
 
 # Partial rebuild — only File3_Raw changed
-python Pipeline/build_all.py --skip-file1 --skip-file2
+python Pipeline/build_all.py --skip-file1 --skip-file2 --skip-states
 
 # Validate after any rebuild
 python Pipeline/validate.py
@@ -180,45 +184,59 @@ Three CSVs auto-pushed to Kaggle on every daily update via GitHub Actions (`kagg
 
 ---
 
-## Phase 2 — Coverage expansion 🔶 PARTIALLY COMPLETE (2026-07-10)
+## Phase 2 — Coverage expansion ✅ COMPLETE (2026-07-10)
 
 **Owner:** Sagnik — this is scraper/parser work, same skillset as Phase 0/1, not delegated.
 
 | Task | Priority | Status |
 |------|----------|--------|
 | Text-regex fallback for generation/outage on 12 merged-blob PDFs (last ~0.5% of rows) | Medium | ✅ Done |
-| §C state-level table → `study3_states.csv` (~40 state entities, daily) — optional separate study | Low | 🔲 Not started |
-| Backfill 2025-05-22/23 if NLDC re-publishes | Low | 🔲 Blocked on NLDC (not actionable by us) |
+| §C state-level table → `study3_states.csv` (~40 state entities, daily) | Low | ✅ Done |
+| Backfill 2025-05-22/23 if NLDC re-publishes | Low | 🔲 Still blocked on NLDC (not actionable by us) |
 
-### What was actually wrong (found by inspecting raw PDFs directly, 2026-07-10)
+### 2a. Merged-blob generation/outage fix
 
-The original "merged-text blob with no column grid" theory was wrong. Two distinct, unrelated bugs were found instead:
+**What was actually wrong** (found by inspecting raw PDFs directly, not by re-reading the original theory): the "merged-text blob with no column grid" theory was wrong. Two distinct, unrelated bugs were found instead:
 
 1. **Some 2019 PDFs (e.g. 29/30.03.19) DO have a well-structured Section G table** — `pdfplumber.extract_tables()` detects it fine — but the "All India" header cell renders as a stray `'0'` character. The parser's `_pdf_generation()` only matched by searching the header text for "all india", so it silently skipped an otherwise-perfectly-good table.
 2. **Some 2021 PDFs never produce a detected table for Section F/G at all** (no visible gridlines in that part of the page), even though `extract_text()` returns the section as normal, cleanly whitespace-delimited rows.
 
-### What was built
-
-A single new function, `_pdf_gen_outage_text_fallback()`, added to both `Scrapings/parse_psp_pdf_xls_file1.py` and `parse_psp_pdf_xls_file2.py` (the two files are byte-identical, so both got the same edit). It works directly on `extract_text()` output — bypassing `extract_tables()`'s column-header matching entirely — and matches row labels by stripping everything but letters (handles labels that gain/lose internal spaces across report eras, e.g. "Gas, Naptha & Diesel" vs "Gas,Naptha&Diesel"), then pulls data columns *positionally* from the numbers found on each line, since a trailing %Share column exists in some report eras and not others. Wired into `parse_pdf()` as a last resort, only filling keys still missing after the existing table-based passes — never overwrites a correctly-parsed value.
+**What was built:** a single new function, `_pdf_gen_outage_text_fallback()`, added to both `Scrapings/parse_psp_pdf_xls_file1.py` and `parse_psp_pdf_xls_file2.py` (the two files are byte-identical, so both got the same edit). It works directly on `extract_text()` output — bypassing `extract_tables()`'s column-header matching entirely — and matches row labels by stripping everything but letters (handles labels that gain/lose internal spaces across report eras, e.g. "Gas, Naptha & Diesel" vs "Gas,Naptha&Diesel"), then pulls data columns *positionally* from the numbers found on each line, since a trailing %Share column exists in some report eras and not others. Wired into `parse_pdf()` as a last resort, only filling keys still missing after the existing table-based passes — never overwrites a correctly-parsed value.
 
 **Bonus fix, found along the way:** rebuilding surfaced two new all-null rows dated 2014-08-14/17 that hadn't existed in the previously-committed dataset. Root cause: `15.08.20_NLDC_PSP.pdf` and `18.08.20_NLDC_PSP.pdf` are old enough to lack a subject line, so the parser falls back to the PDF's own "Date of Reporting" field — which itself has a genuine NLDC-side typo, literally printing "15-Aug-**14**" instead of "15-Aug-**20**". Added a `MIN_VALID_DATE` guard (2018-12-01, the dataset's documented start) in `build_dataset()` that drops any row dated earlier and logs what it dropped, since such a date can only be a source/parse artifact.
 
-### Verification (2026-07-10)
+**Verification:** all 12 originally-affected dates confirmed populated (`gen_total_mu`, `outage_total_total_mw`, and individual `gen_coal_mu` etc.), cross-checked by hand against raw PDF text for 3 dates. The 2 bogus 2014 rows confirmed dropped; `study1_daily`'s date range is back to the documented 2018-12-31 start.
 
-- All 12 originally-affected dates confirmed populated (`gen_total_mu`, `outage_total_total_mw`, and individual `gen_coal_mu` etc.), cross-checked by hand against raw PDF text for 3 dates.
-- The 2 bogus 2014 rows confirmed dropped; `study1_daily`'s date range is back to the documented 2018-12-31 start.
-- `Pipeline/validate.py`: all `study1_daily`/`study1_hourly` checks pass (2 pre-existing WARNs on `xb_net` identity, unrelated). The only FAIL is the already-documented, unrelated `study2_scada` 2025-10-02 63-slot day (File3/XLS parser, untouched by this work).
+### 2b. New dataset: `Dataset/study3_states.csv` — §C state-level table
 
-### Still open (both low priority, unchanged from original scope)
+**Goal:** extract NLDC's §C "Power Supply Position in States" section — ~40 state/UT/entity rows per day (max demand met, shortage, energy met, drawal schedule, OD/UD, max OD, energy shortage) — into a fourth published dataset, long format (one row per state per day).
 
-1. §C state-level table → `study3_states.csv` — a genuinely separate mini-project (new parser section, new output CSV, new `build_all.py` step, new `validate.py` checks), not started.
-2. 2025-05-22/23 backfill — not actionable until/unless NLDC re-publishes those dates on their own end.
+**New parser:** `Scrapings/parse_psp_states.py`, self-contained (not built on file1/file2, since it needs a fundamentally different multi-row-per-file output shape). Supports both PDF (2019-2022, `pdfplumber` table detection) and XLS (2023+, MOP_E sheet) eras — both render §C as the same 9-column table at the same offsets.
+
+**Two real data-quality problems found and solved, both needing whole-archive visibility to fix correctly (not fixable per-file):**
+
+1. **Region label (NR/WR/SR/ER/NER) is a merged cell in the source template**, rendered on whichever row a fixed group-size calculation happens to land on. Initial assumption was that this varied by date and could be recovered with per-file forward/backward-fill — wrong: verified across the full 2,722-file archive that only 12 of 43 canonical state entities ever had a region label anywhere, because the label's position is a deterministic template artifact, not something that varies with more data. Fixed with a static `STATE_TO_REGION` map (built from the states that did resolve via majority vote, plus direct verification against raw file dumps for the other 31) as the **primary** source of truth, with cross-date majority voting kept only as a fallback for any future entity not yet in that map.
+2. **State names extract inconsistently across report eras** — concatenated-text PDFs drop spaces ("TamilNadu"), some cells wrap across two table rows ("J&K(UT) &" / "Ladakh(UT)"), and naming genuinely changed over time (J&K's Aug 2019 split into J&K + Ladakh UTs; Puducherry's old "Pondy" abbreviation). Without normalizing these first, the same real-world entity fragmented into up to 6 different `state` strings, which also starved the majority vote of enough samples per variant. Fixed with a `STATE_NAME_ALIASES` map applied before region resolution — consolidated 59 raw variants down to 43 canonical entities.
+
+One row (`state` literally extracted as `"0"`, 2023-12-04) is the same header-corruption pattern as fix 2a but corrupting a state name instead of a column header — dropped rather than guessed, since which state it was can't be recovered without manually opening that file.
+
+**Known residual gap:** `10.05.19_NLDC_PSP.pdf` is rendered entirely in Hindi/Devanagari (not NLDC's usual bilingual format) — the only PDF in the whole archive like this. The English-language "States" section-header match can't find it, so that single date has no §C data. `study1_daily`/`study1_hourly` aren't affected (their parsers don't depend on that text match). Not worth a Hindi-specific fix for one file; treated the same as the other rare, low-value gaps documented in Phase 0.
+
+**Schema:** `date, region, state,` then 7 metrics (`max_demand_met_mw`, `shortage_max_demand_mw`, `energy_met_mu`, `drawal_schedule_mu`, `od_ud_mu`, `max_od_mw`, `energy_shortage_mu`). Long format chosen over wide (one row per date) because ~40 states × 7 metrics would mean ~280 columns — long format matches how a per-entity time series is actually queried/joined.
+
+**Verification:** `Pipeline/validate.py --only study3` passes all 6 checks (column/row counts, no duplicate (date, state) pairs, freshness, every row has a valid region, consistent ~36-state-per-day count). Spot-checked 5 state/date combinations by hand against raw source files (2 PDF-era, 3 XLS-era) — all match exactly. Final dataset: **99,208 rows × 10 columns**, 2018-12-31 → present.
+
+### Still open (both low priority, unchanged — this was never expected to fully close)
+
+1. 2025-05-22/23 backfill — not actionable until/unless NLDC re-publishes those dates on their own end. Checked live on 2026-07-10: still unavailable (NLDC's site also has a TLS cert issue the scraper works around with `verify=False`, which blocks a quick manual check too — would need the full `local_download.py` run to re-verify).
+2. `10.05.19` Hindi-only PDF gap in `study3_states.csv` — see above, low value to fix for one date.
 
 ### Where the code lives
 
-- Parsers: `Scrapings/parse_psp_pdf_xls_file1.py`, `parse_psp_pdf_xls_file2.py` (identical files, both patched)
-- Pipeline entry point: `Pipeline/build_all.py`
-- Validation: `Pipeline/validate.py`
+- Merged-blob fix: `Scrapings/parse_psp_pdf_xls_file1.py`, `parse_psp_pdf_xls_file2.py` (identical files, both patched)
+- States parser: `Scrapings/parse_psp_states.py` (new, self-contained)
+- Pipeline entry point: `Pipeline/build_all.py` (new `--skip-states` flag, new step 3)
+- Validation: `Pipeline/validate.py` (new `check_study3_states()`, new `--only study3`)
 
 ### Environment
 
