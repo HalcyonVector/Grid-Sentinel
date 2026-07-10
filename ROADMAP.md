@@ -1,6 +1,6 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-10 (Phase 2 merged-blob fix implemented and verified; 2014 bogus-date bug found and fixed)_
+_Last updated: 2026-07-10 (Phase 2 merged-blob fix implemented and verified; 2014 bogus-date bug found and fixed; Phase 3 naive-persistence anchor bug found, fixed, and re-verified)_
 
 ---
 
@@ -321,12 +321,26 @@ Predict next-day national (and ideally per-region) demand/energy from `study1_da
 
 ### What already exists
 
-`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks (`01_eda.ipynb`, `02_features.ipynb`, `03_baseline.ipynb`, `04_era1_ramp_characterization.ipynb`) are built and committed to `abhirami-branch` under `ML/Study1/notebooks/`. `predict.py` not yet built (deferred, per "Done when" below).
+`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks (`01_eda.ipynb`, `02_features.ipynb`, `03_baseline.ipynb`, `04_era1_ramp_characterization.ipynb`) are built and committed under `ML/Study1/notebooks/`. `predict.py` not yet built (deferred, per "Done when" below).
 
 Confirmed target column: `max_demand_met_total_mw`.
 
-Results:
-- LightGBM baseline (predicting next-day demand as lag1 + predicted delta, trained on lag/rolling/calendar features only) beat naive persistence: MAPE 0.0247 vs 0.0311, RMSE 7387.8 vs 8968.9, MAE 5367.5 vs 6735.0 (test window 2024–2026).
+### Bug found and fixed (2026-07-10, after initial "done" claim)
+
+The first committed version of `03_baseline.ipynb` had a real off-by-one bug: it used `TARGET_lag1` as both the delta-training anchor and the naive-persistence comparison baseline. But `TARGET_lag1` was computed from lag features built **before** the target got shifted forward to represent "tomorrow's demand" — so after the shift, `lag1` ended up anchored **two days** before the forecast date instead of one. This wasn't caught by re-reading the notebook; it was found by actually re-running the code against the live data.
+
+**Verified empirically:** a correctly-anchored (1-day-lag) naive-persistence baseline (MAPE 0.0242, RMSE 6,978.5) actually **beat** the originally-reported LightGBM result (MAPE 0.0247, RMSE 7,387.8) — meaning the "model beats naive persistence" claim, as first reported, was not true; the comparison itself was broken.
+
+**Fix:** added `make_next_day_target()` to `features.py` — a single function that shifts the target *and* preserves today's true value as `{TARGET}_today` before doing so, so the correct anchor can never again be silently destroyed by an in-place overwrite. `03_baseline.ipynb` updated to use it. Re-verified by re-running the corrected pipeline end-to-end against the live dataset:
+
+**Corrected results (2026-07-10, verified):**
+- LightGBM: **MAPE 0.0175, RMSE 5,242.9, MAE 3,800.8**
+- Naive persistence (correct 1-day anchor): MAPE 0.0242, RMSE 6,978.5, MAE 5,258.4
+- LightGBM genuinely and comfortably beats naive persistence — a *larger* margin than the original (invalid) comparison claimed.
+
+Also fixed while verifying: `01_eda.ipynb` had its single cell's content accidentally duplicated ~15x (harmless but messy — deduped to one clean copy); `04_era1_ramp_characterization.ipynb` sorted the hourly frame by `"date"` alone before computing hour-to-hour deltas, which isn't guaranteed to preserve correct within-day hour order under an unstable sort — changed to sort by `"datetime"`.
+
+Other results (unaffected by the bug above, verified sound on review):
 - Era 1 ramp magnitude/frequency vs `share_res_pct`: correlation -0.367 / -0.429 respectively (monthly-aggregated, 2019–2022) — chart and `era1_ramp_vs_res_share.csv` produced. Note: both series share strong annual seasonality, so this correlation may be partly confounded by season rather than a clean RES-driven effect.
 - 69 missing dates found in `study1_daily.csv` (vs ~70 expected — consistent with Phase 0 documentation).
 - `ir_*`/`xb_*` corridor columns (only populated from 2023+) excluded from Study 1 features; revisit only if later feature importance suggests value.
@@ -392,7 +406,7 @@ Google Colab (see "ML Development Environment" above) — notebooks committed to
 
 ### Done when
 
-~~`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks are committed; the baseline model beats naive persistence on MAPE/RMSE on the 2024–2026 test window; the Era 1 ramp-characterization trend is produced and charted.~~ **All done as of 2026-07-10.** `predict.py` and GitHub Actions wiring can follow after.
+~~`ML/environment.yml`, `ML/Study1/features.py`, and all four notebooks are committed; the baseline model beats naive persistence on MAPE/RMSE on the 2024–2026 test window; the Era 1 ramp-characterization trend is produced and charted.~~ **All done and independently re-verified as of 2026-07-10** (see "Bug found and fixed" above — the first pass had a broken naive-persistence comparison; corrected and re-run against live data before being marked complete here). `predict.py` and GitHub Actions wiring can follow after.
 
 ---
 

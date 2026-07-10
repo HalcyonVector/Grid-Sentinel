@@ -40,9 +40,43 @@ def add_rolling_features(df: pd.DataFrame, col: str = TARGET, windows=(7, 30)) -
 
 
 def build_feature_table(df: pd.DataFrame) -> pd.DataFrame:
-    """Full pipeline: assumes df sorted by date ascending, date column parsed as datetime."""
+    """Full pipeline: assumes df sorted by date ascending, date column parsed as datetime.
+
+    Does NOT shift the target for next-day prediction -- call
+    make_next_day_target() on the result before training, so lag/rolling
+    features here are always computed relative to the true historical
+    target, never the shifted one.
+    """
     df = drop_out_of_scope_cols(df)
     df = add_calendar_features(df)
     df = add_lag_features(df)
     df = add_rolling_features(df)
+    return df
+
+
+def make_next_day_target(df: pd.DataFrame, col: str = TARGET) -> pd.DataFrame:
+    """
+    Prepares a next-day forecasting target. Must run AFTER build_feature_table(),
+    since it destructively overwrites `col` -- if lag/rolling features were
+    computed after this call instead of before, they'd be built from tomorrow's
+    values instead of today's.
+
+    Preserves today's actual value as f"{col}_today" before overwriting `col`
+    with tomorrow's value. f"{col}_today" is the correct anchor for both the
+    naive-persistence baseline and for reconstructing an absolute prediction
+    from a delta-target model (pred = model_output + {col}_today).
+
+    Do NOT use f"{col}_lag1" for either purpose here: lag1 was computed
+    relative to the *original* (pre-shift) target, so once `col` itself has
+    been shifted forward by one day, lag1 ends up two days behind the new
+    target instead of one -- silently weakening any naive-persistence
+    comparison and mis-anchoring any delta-target reconstruction. This bug
+    was found and fixed in Study 1's baseline (2026-07-10): the naive
+    persistence baseline computed via lag1 was actually *beaten* by a
+    correctly-anchored naive baseline, invalidating the original "model
+    beats naive persistence" result until this fix.
+    """
+    df = df.copy()
+    df[f"{col}_today"] = df[col]
+    df[col] = df[col].shift(-1)
     return df
