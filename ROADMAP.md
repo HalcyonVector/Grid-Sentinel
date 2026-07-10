@@ -228,7 +228,7 @@ One row (`state` literally extracted as `"0"`, 2023-12-04) is the same header-co
 
 ### Still open (both low priority, unchanged — this was never expected to fully close)
 
-1. 2025-05-22/23 backfill — not actionable until/unless NLDC re-publishes those dates on their own end. Checked live on 2026-07-10: still unavailable (NLDC's site also has a TLS cert issue the scraper works around with `verify=False`, which blocks a quick manual check too — would need the full `local_download.py` run to re-verify).
+1. 2025-05-22/23 backfill — not actionable until/unless NLDC re-publishes those dates on their own end. Re-checked directly on 2026-07-10 using the actual production downloader (`download_psp_new.old_url()` + `fetch_bytes()`, which already handles NLDC's TLS cert issue via `verify=False` — no tooling limitation this time): both the `.xls` and `.pdf` URLs for both dates return clean 404s, not errors. Cross-checked against the raw archive's filename sequence — `01.05.25` through `21.05.25` are present with no gaps, then it jumps straight to `24.05.25` with no offset or renamed file hiding in between. This is a genuine, confirmed 2-day hole in what NLDC published, not a scraper or tooling gap on our end.
 2. `10.05.19` Hindi-only PDF gap in `study3_states.csv` — see above, low value to fix for one date.
 
 ### Where the code lives
