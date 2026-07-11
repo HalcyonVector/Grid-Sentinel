@@ -222,12 +222,22 @@ def check_study2_scada() -> None:
     if "date" in df.columns:
         slots_per_day = df.groupby("date").size()
 
-        # Legacy 63-slot days are a known parser bug -- must be zero
-        n_63 = (slots_per_day == 63).sum()
-        if n_63:
-            fail(label, f"{n_63} day(s) with 63 slots (legacy parse error)")
+        # Severely incomplete days (< 90 of the expected 96 slots) are corrupted source
+        # files, not real grid behavior -- e.g. 2025-10-02 (63 slots, a legacy parse
+        # error) plus 2024-11-20 and 2025-04-01 (1 slot each), found 2026-07-11 while
+        # building ML/Study2/features.py and confirmed via the same 90-slot threshold
+        # used there (MIN_SLOTS_PER_DAY). Previously this script only special-cased the
+        # 63-slot day by name, which meant the two 1-slot days -- far more severe, almost
+        # a full day of missing data -- fell through into the generic "outside 96" WARN
+        # below and looked no worse than a benign 95-slot DST day. Any day this thin
+        # should always hard-fail, not blend into a soft warning.
+        MIN_SLOTS = 90
+        severely_incomplete = slots_per_day[slots_per_day < MIN_SLOTS]
+        if len(severely_incomplete):
+            fail(label, f"{len(severely_incomplete)} day(s) with < {MIN_SLOTS} slots "
+                        f"(corrupted source file, not real data): {severely_incomplete.index.tolist()}")
         else:
-            ok(label, "no 63-slot days")
+            ok(label, f"no days with < {MIN_SLOTS} slots")
 
         # Expected: 96 slots. Allow 95/97/98 (clock-change or partial day) as warnings.
         allowed = {95, 96, 97, 98}
@@ -279,9 +289,17 @@ def check_study1_hourly() -> None:
         ok(label, f"row count = {n_rows:,}")
 
     # Datetime column
+    # NOTE: previously parsed with format="mixed", dayfirst=True, which is wrong for this
+    # column -- both `date` and `datetime` are uniformly ISO (YYYY-MM-DD[ HH:MM:SS]),
+    # verified 2026-07-11 against all 46,728 rows, never ambiguous. dayfirst=True still
+    # swapped month/day for at least one real row ("2024-04-12" -> "2024-12-04"),
+    # silently reporting a wrong (and later) "latest datetime" than the data actually has.
+    # Parsing with the exact known format avoids the ambiguity entirely instead of
+    # guessing per-row.
     date_col = "datetime" if "datetime" in df.columns else ("date" if "date" in df.columns else None)
     if date_col:
-        latest = pd.to_datetime(df[date_col], format="mixed", dayfirst=True).max()
+        fmt = "%Y-%m-%d %H:%M:%S" if date_col == "datetime" else "%Y-%m-%d"
+        latest = pd.to_datetime(df[date_col], format=fmt).max()
         ok(label, f"latest {date_col} = {latest.date()}")
     else:
         warn(label, "no date or datetime column found")

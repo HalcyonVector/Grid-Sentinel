@@ -183,7 +183,7 @@ Script: `Pipeline/validate.py`. Run after every rebuild. Exits 0 on all pass, 1 
 | `xb_export_*` >= 0 | study1_daily | WARN |
 | `xb_net_* = import − export` per country (abs diff < 0.01) | study1_daily | WARN |
 | `ir_*_net = import − export` per corridor (abs diff < 0.01) | study1_daily | WARN |
-| No 63-slot days | study2_scada | FAIL |
+| Days with < 90 slots (corrupted source file) | study2_scada | **FAIL** |
 | Days with slot count outside {95, 96, 97, 98}: > 10 days | study2_scada | FAIL |
 | Days with slot count outside {95, 96, 97, 98}: <= 10 days | study2_scada | WARN |
 | `freq_hz` outside [47, 52] Hz | study2_scada | WARN |
@@ -191,6 +191,12 @@ Script: `Pipeline/validate.py`. Run after every rebuild. Exits 0 on all pass, 1 
 Checks not yet implemented: null % per column vs stored baseline; date continuity against the known 70-gap list (gap list is prose in this roadmap, not machine-readable).
 
 > **Col count note — resolved 2026-07-10:** study2_scada's 164 columns are exactly `study1_daily`'s 144 columns (fully present, none missing — verified by direct diff) plus exactly 20 real-time/SCADA-specific columns (`time`, `hhmm`, `freq_hz`, `demand_met_mw`, per-source real-time generation, `net_demand_met_mw`, `total_gen_mw`, `net_trans_exchange_mw`, and 6 `time_max_demand_met_*` columns). 144 + 20 = 164 exactly, no gap. The "165" in earlier roadmap prose was a stale estimate written before the dataset was actually built and counted — not a missing column.
+
+> **Two bugs found and fixed 2026-07-11, while re-verifying Phase 4's work against the full pipeline (not just re-reading docs):**
+> 1. `check_study1_hourly()` parsed its date column with `format="mixed", dayfirst=True` — wrong for this column, since both `date` and `datetime` are uniformly ISO (`YYYY-MM-DD[ HH:MM:SS]`), verified against all 46,728 rows. `dayfirst=True` still silently swapped month/day for at least one real row (`2024-04-12` → misreported as `2024-12-04`), making the printed "latest datetime" wrong even though the underlying data was always correct (true latest = `2024-04-30`, matching this doc's own dataset-inventory table the whole time). Fixed by parsing with the exact known format instead of guessing.
+> 2. The 63-slot-day check in `check_study2_scada()` only special-cased that one literal value by name. Two more severely-corrupted days — `2024-11-20` and `2025-04-01`, 1 slot each — were found while building `ML/Study2/features.py` (2026-07-11) but had only ever been falling into the generic "slot count outside 96" WARN, indistinguishable from a benign 95-slot DST day. Generalized the check to hard-FAIL any day under 90 slots (matching the `MIN_SLOTS_PER_DAY` threshold already used in `ML/Study2/features.py`), and it now names all 3 bad days explicitly. `validate.py` correctly reports this as a FAIL — that's by design for a known-but-uncorrectable source issue, not a regression; `Pipeline/build_all.py` does not currently invoke `validate.py`, so this has no effect on the automated CI pipeline.
+>
+> Also confirmed (not a bug, a genuine source-data finding, same category as the 2022-08-11 hydro mismatch below): the `xb_net` WARN fires for 2024-08-08 (Bhutan diff 28.19 MU, Nepal diff 2.63 MU) because NLDC's own source file (`08.08.24_NLDC_PSP.xls`) has an internal inconsistency — their own published "Net" row doesn't arithmetically equal their own Import − Export rows in the same file. Confirmed directly against the raw XLS; the parser is faithfully reporting NLDC's own numbers, not miscalculating. The other ~24 flagged rows (mostly Nepal, sitting right at the 0.01 MU tolerance boundary) are floating-point-scale rounding in NLDC's own published figures, not a parser issue.
 
 ### 1c. Data dictionary ✅ COMPLETE (2026-07-01; updated 2026-07-10)
 
@@ -556,7 +562,7 @@ Every number below was independently re-executed against the live dataset (56,98
 | Frequency | `freq_hz`, `freq_fvi`, `freq_pct_*` bands | Per slot — used to derive the violation label |
 | Study 1 residual | *(new, produced by Phase 3's `predict.py`)* | Broadcast per day, same pattern as other daily-to-slot broadcasts |
 
-One known bad day (2025-10-02, 63 slots) must be dropped before training; a handful of other days have 95/98 slots (DST/truncation edge cases) — handle explicitly, don't silently drop or pad.
+Three known bad days must be dropped before training: **2025-10-02** (63 slots, a legacy parse error) plus **2024-11-20** and **2025-04-01** (1 slot each — found 2026-07-11 while building `ML/Study2/features.py`, added to `Pipeline/validate.py`'s check as a proper named FAIL rather than blending into the generic slot-count WARN). A handful of other days have 95/97/98 slots (DST/truncation edge cases, not corrupted files) — handle explicitly, don't silently drop or pad.
 
 ### Step by step
 
