@@ -20,7 +20,13 @@ Study 2 tries to answer, for every 15-minute slot of the day: "in the next 15-60
 
 Both are "OR over the lookahead window" labels, not "will it happen in exactly slot N" — this matches how an early-warning system would actually be used (any warning in the next hour is actionable), and it's why their positive rate (violation_lead ≈2.4%, ramp_lead ≈15%) is higher than the raw per-slot event rate (0.89% / 6.1%) reported in `01_eda.ipynb`.
 
-`add_violation_label()` and `build_feature_table()` both take a `lead_slots` / `violation_lead_slots` override (default 4, matching `LEAD_SLOTS`) — added 2026-07-11 so `03_violation_baseline.ipynb` could test shorter lead windows without disturbing the shipped default or the ramp-shock target. See that notebook's appendix for the real (mixed) result: shorter windows trade recall for precision/lift, no window is a clean winner, and 4 remains the shipped default.
+`add_violation_label()` and `build_feature_table()` both take a `lead_slots` / `violation_lead_slots` override (default 4, matching `LEAD_SLOTS`) — added 2026-07-11 so `03_violation_baseline.ipynb` could test shorter lead windows without disturbing the shipped default or the ramp-shock target. See that notebook's appendix for the result (re-verified after the `scale_pos_weight` fix below): 2 slots now has both the highest PR-AUC and best-F1 of the four windows tested, though 4 remains the shipped default pending an explicit product decision on whether to change it.
+
+---
+
+## Solar-volatility features — added 2026-07-11
+
+`solar_delta_mw` (slot-to-slot change in `solar_mw`) and `solar_roll8_std` (rolling std over the last 8 slots) were added to `add_slot_lag_features()` after the originally-planned two-stage ramp→violation idea was tested and falsified: `P(ramp_lead=1 | violation_lead=1)` = 14.2%, actually *below* the 15.1% unconditional rate, so a demand-side ramp does not meaningfully precede a violation in this data. Scanning every generation source's slot-to-slot delta for correlation with `violation_lead` instead found solar clearly ahead of the rest (corr 0.0785 vs. wind's 0.036, demand's ~0) — consistent with violations clustering at 08:00-09:00 and 13:00 (`01_eda.ipynb`), prime solar-ramp hours. Both features use the same contiguity guard as everything else in this file.
 
 ---
 
@@ -48,9 +54,11 @@ This is a **single-cutoff backtest approximation**, not a reproduction of what `
 
 ---
 
-## `scale_pos_weight()` — why not SMOTE
+## `scale_pos_weight()` — kept, but no longer used
 
-Both targets are rare-event (0.5-18% positive rate depending on split/target). LightGBM's `scale_pos_weight` handles this natively by reweighting the loss function — chosen over SMOTE (synthetic oversampling) because it doesn't require inventing synthetic frequency/demand values that don't correspond to real grid states, and tree boosting handles class weighting well without it.
+Both targets are rare-event (0.5-18% positive rate depending on split/target), and `scale_pos_weight` was the original plan for handling that — chosen over SMOTE (synthetic oversampling) because it doesn't require inventing synthetic frequency/demand values that don't correspond to real grid states, and tree boosting should handle class weighting natively.
+
+**Found broken, 2026-07-11:** it caused LightGBM's early stopping to fire after a single boosting round (`best_iteration_=1`) for the `violation_lead` target specifically, in every configuration tested (extra regularization, `is_unbalance=True`, different learning rates) — effectively capping the model at close to one shallow tree instead of the intended up-to-500-round ensemble. Removing it entirely, and switching the early-stopping eval metric from the default `binary_logloss` to `average_precision`, raised `violation_lead`'s PR-AUC from 0.0614 to 0.0937 and gave a smaller but consistent gain on `ramp_lead` too (0.7140 → 0.7248). Neither `03_violation_baseline.ipynb`, `04_ramp_shock_baseline.ipynb`, nor `predict.py` call this function anymore. The function itself is kept, not deleted, as a documented cautionary reference — see its docstring for how to recognize this failure mode if a future rare-event target tempts someone to reach for it again (suspiciously tiny single-digit feature-importance split counts is the tell, not an obvious crash).
 
 ---
 

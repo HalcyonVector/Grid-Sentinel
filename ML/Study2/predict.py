@@ -39,7 +39,7 @@ import lightgbm as lgb
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from features import build_feature_table, scale_pos_weight, FEATURE_COLS  # noqa: E402
+from features import build_feature_table, FEATURE_COLS  # noqa: E402
 
 STUDY2_CSV = REPO_ROOT / "Dataset" / "study2_scada.csv"
 RISK_LOG = REPO_ROOT / "Dataset" / "predictions" / "study2_risk.csv"
@@ -92,14 +92,19 @@ def train_and_predict_day(feat_df: pd.DataFrame, target_day: pd.Timestamp):
         tr = labeled[labeled["date"] <= cutoff]
         val = labeled[labeled["date"] > cutoff]
 
-        model = lgb.LGBMClassifier(
-            n_estimators=500, learning_rate=0.05, random_state=42, verbosity=-1,
-            scale_pos_weight=scale_pos_weight(tr[label_col]),
-        )
+        # NOT using scale_pos_weight -- found 2026-07-11 (see features.py's
+        # scale_pos_weight() docstring) to cause LightGBM's early stopping to fire
+        # after a single boosting round for violation_lead specifically, silently
+        # training close to a single shallow tree. Removing it and switching the
+        # early-stopping metric to average_precision raised violation_lead's PR-AUC
+        # from 0.0614 to 0.0937 in the offline baseline notebooks, and gave a
+        # smaller but consistent gain on ramp_lead too.
+        model = lgb.LGBMClassifier(n_estimators=500, learning_rate=0.05, random_state=42, verbosity=-1)
         model.fit(
             tr[FEATURE_COLS], tr[label_col],
             eval_set=[(val[FEATURE_COLS], val[label_col])],
-            callbacks=[lgb.early_stopping(30, verbose=False)],
+            eval_metric="average_precision",
+            callbacks=[lgb.early_stopping(50, verbose=False)],
         )
         results[out_col] = model.predict_proba(target_rows[FEATURE_COLS])[:, 1]
 

@@ -124,6 +124,22 @@ def add_slot_lag_features(df: pd.DataFrame) -> pd.DataFrame:
         df[f"freq_hz_lag{k}"] = np.where(gap_ok, df["freq_hz"].shift(k), np.nan)
         df[f"demand_met_mw_lag{k}"] = np.where(gap_ok, df["demand_met_mw"].shift(k), np.nan)
 
+    # Solar-side volatility -- added 2026-07-11 after an explicit diagnostic check found
+    # the originally-hypothesized signal for the violation target was wrong: demand-side
+    # ramps (ramp_lead / demand_delta_mw) do NOT precede violations more than chance
+    # (P(ramp_lead=1 | violation_lead=1) = 14.2%, actually BELOW the 15.1% unconditional
+    # rate -- a real, negative result, not pursued further). Scanning every generation
+    # source's slot-to-slot delta for correlation with violation_lead instead found solar
+    # clearly ahead of the rest (corr 0.0785 vs wind 0.036, all others near zero, plain
+    # demand delta near zero) -- consistent with violations clustering at 08:00-09:00 and
+    # 13:00 (01_eda.ipynb), prime solar-ramp hours. Physically: a violation may be a
+    # downstream consequence of fast-changing SOLAR generation outrunning reserves, not
+    # fast-changing demand, which is a materially different (and better-supported)
+    # hypothesis than the one originally proposed.
+    prev_dt1 = df["datetime"].shift(1)
+    gap_ok1 = (df["datetime"] - prev_dt1) == pd.Timedelta(minutes=SLOT_MINUTES)
+    df["solar_delta_mw"] = np.where(gap_ok1, df["solar_mw"] - df["solar_mw"].shift(1), np.nan)
+
     # rolling stats over the last 8 slots (2 hours) -- only meaningful if the window is
     # actually contiguous, so require the 8th-lag slot to be exactly 8*15min behind.
     window = 8
@@ -131,6 +147,7 @@ def add_slot_lag_features(df: pd.DataFrame) -> pd.DataFrame:
     window_ok = (df["datetime"] - prev_dt_w) == pd.Timedelta(minutes=SLOT_MINUTES * (window - 1))
     df["freq_hz_roll8_std"] = np.where(window_ok, df["freq_hz"].rolling(window).std(), np.nan)
     df["demand_delta_roll8_std"] = np.where(window_ok, df["demand_delta_mw"].rolling(window).std(), np.nan)
+    df["solar_roll8_std"] = np.where(window_ok, df["solar_mw"].rolling(window).std(), np.nan)
     return df
 
 
@@ -222,6 +239,7 @@ FEATURE_COLS = (
     ["freq_hz_lag1", "freq_hz_lag2", "freq_hz_lag3",
      "demand_met_mw_lag1", "demand_met_mw_lag2", "demand_met_mw_lag3",
      "freq_hz_roll8_std", "demand_delta_roll8_std", "demand_delta_mw",
+     "solar_delta_mw", "solar_roll8_std",
      "hour", "dow", "month", "is_weekend", "is_solar_hr",
      "share_res_pct", "net_trans_exchange_mw", "study1_residual_mw"]
     + CORRIDOR_COLS
@@ -229,10 +247,25 @@ FEATURE_COLS = (
 
 
 def scale_pos_weight(y: pd.Series) -> float:
-    """LightGBM's scale_pos_weight for a binary target -- chosen over SMOTE for
-    both event types (0.5-7% positive rate): tree boosting handles class weighting
-    natively without needing synthetic minority samples, and avoids inventing
-    synthetic frequency/demand values that don't correspond to real grid states."""
+    """LightGBM's scale_pos_weight for a binary target.
+
+    NOT used by 03_violation_baseline.ipynb, 04_ramp_shock_baseline.ipynb, or
+    predict.py as of 2026-07-11 -- kept here as a documented cautionary utility,
+    not deleted, since the reasoning for trying it in the first place (chosen over
+    SMOTE: tree boosting should handle class weighting natively, without inventing
+    synthetic frequency/demand values) was sound, but empirically it backfired
+    badly for the ~2-3% violation_lead target specifically: it caused LightGBM's
+    early stopping to fire after a single boosting round (best_iteration_=1) in
+    every configuration tested (with/without extra regularization, with/without
+    is_unbalance, at multiple learning rates) -- effectively training a single
+    shallow tree instead of the intended up-to-500-round ensemble. Removing it
+    entirely raised the violation classifier's PR-AUC from 0.0614 to 0.0937 (a
+    real, large jump, not noise) and gave a modest but consistent gain on
+    ramp_lead too. If a future rare-event target needs class weighting again,
+    verify best_iteration_ isn't collapsing to 1 before trusting the result --
+    that's what this bug looked like from the outside (a plausible-looking
+    PR-AUC, feature importances that were all suspiciously tiny single-digit
+    split counts), not an obvious crash."""
     pos = y.sum()
     neg = len(y) - pos
     return float(neg / pos) if pos > 0 else 1.0
