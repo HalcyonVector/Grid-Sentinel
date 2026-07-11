@@ -89,11 +89,14 @@ def _add_lead_label(df: pd.DataFrame, event_col: str, out_col: str, lead_slots: 
     return df
 
 
-def add_violation_label(df: pd.DataFrame) -> pd.DataFrame:
+def add_violation_label(df: pd.DataFrame, lead_slots: int = LEAD_SLOTS) -> pd.DataFrame:
+    """lead_slots is exposed (unlike add_ramp_label) because 03_violation_baseline.ipynb
+    tests a shorter lead window as a real experiment -- see that notebook for the
+    verified before/after comparison."""
     df = df.copy()
     df["violation"] = ((df["freq_hz"] < FREQ_LOW) | (df["freq_hz"] > FREQ_HIGH)).astype(float)
     df.loc[df["freq_hz"].isna(), "violation"] = np.nan
-    return _add_lead_label(df, "violation", "violation_lead")
+    return _add_lead_label(df, "violation", "violation_lead", lead_slots=lead_slots)
 
 
 def add_ramp_label(df: pd.DataFrame) -> pd.DataFrame:
@@ -186,12 +189,18 @@ def build_study1_residual_signal() -> pd.DataFrame:
     return out.reset_index(drop=True)
 
 
-def build_feature_table(scada_df: pd.DataFrame, study1_residual: pd.DataFrame = None) -> pd.DataFrame:
+def build_feature_table(scada_df: pd.DataFrame, study1_residual: pd.DataFrame = None,
+                         violation_lead_slots: int = LEAD_SLOTS) -> pd.DataFrame:
     """Full pipeline: assumes scada_df is study2_scada.csv already loaded with
-    date parsed as datetime and hhmm as the minutes-since-midnight integer column."""
+    date parsed as datetime and hhmm as the minutes-since-midnight integer column.
+
+    violation_lead_slots defaults to LEAD_SLOTS (4) but can be overridden -- used by
+    03_violation_baseline.ipynb's shorter-lead-window experiment. ramp_lead's window
+    is not similarly parameterized here since that target's baseline already performs
+    well and wasn't part of the experiment."""
     df = drop_bad_days(scada_df)
     df = add_datetime(df)
-    df = add_violation_label(df)
+    df = add_violation_label(df, lead_slots=violation_lead_slots)
     df = add_ramp_label(df)
     df = add_slot_lag_features(df)
     df = add_time_features(df)

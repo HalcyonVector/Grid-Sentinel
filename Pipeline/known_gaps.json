@@ -1,0 +1,639 @@
+{
+  "_meta": {
+    "generated": "2026-07-11",
+    "purpose": "Machine-readable known-gap dates for Pipeline/validate.py to check against, replacing the prose-only gap list in ROADMAP.md. A date missing from a dataset but NOT in this file is flagged as a new/unexplained gap.",
+    "how_to_regenerate": "Re-run the missing-date scan in this file's generating script against the current CSVs; new entries should get a real, individually-verified reason, not a copy-pasted generic one."
+  },
+  "gaps": {
+    "study1_daily": [
+      {
+        "date": "2019-01-27",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-05-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-06-05",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-09-30",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-10-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-11-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-11-17",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-01-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-02-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-02-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-03-28",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-03-30",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-04-05",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-04-12",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-04-19",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-04-27",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-05-04",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-05-13",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-05-21",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-05-29",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-06-06",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-06-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-06-23",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-06-30",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-05",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-08",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-16",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-21",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-24",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-30",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-01",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-06",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-10",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-17",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-09-03",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-09-08",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-09-13",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-09-21",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-10-17",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-10-23",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-10-27",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-10-28",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-11-13",
+        "reason": "confirmed absent from NLDC archive -- no source file under any filename (Phase 0 audit, 2026-07-10)"
+      },
+      {
+        "date": "2020-11-15",
+        "reason": "confirmed absent from NLDC archive -- no source file under any filename (Phase 0 audit, 2026-07-10)"
+      },
+      {
+        "date": "2020-11-29",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-12-03",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-12-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-12-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-12-16",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-01-03",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-02-18",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-02-27",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-07-17",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-12-12",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-03-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-03-16",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-07-20",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-08-21",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-08-29",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-09-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-09-16",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-09-20",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-10-10",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2025-05-22",
+        "reason": "confirmed absent -- direct probe against NLDC's CDN (.xls and .pdf URLs) returns clean 404s, not errors (2026-07-10)"
+      },
+      {
+        "date": "2025-05-23",
+        "reason": "confirmed absent -- direct probe against NLDC's CDN (.xls and .pdf URLs) returns clean 404s, not errors (2026-07-10)"
+      }
+    ],
+    "study3_states": [
+      {
+        "date": "2019-01-27",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-05-09",
+        "reason": "10.05.19_NLDC_PSP.pdf is rendered entirely in Hindi/Devanagari (only PDF in the archive like this); subject line reads 'Sub: Daily PSP Report for the date 09.05.2019' confirming this file's data date is 2019-05-09, not 2019-05-10 as earlier documented -- the English-language section-header match parse_psp_states.py relies on can't find the States table in this file, so study1_daily/study1_hourly are unaffected but study3_states has no row for this date"
+      },
+      {
+        "date": "2019-05-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-06-05",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-09-30",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-10-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-11-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2019-11-17",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-01-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-02-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-02-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-03-28",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-03-30",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-04-05",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-04-12",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-04-19",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-04-27",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-05-04",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-05-13",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-05-21",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-05-29",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-06-06",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-06-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-06-23",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-06-30",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-05",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-08",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-16",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-21",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-24",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-07-30",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-01",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-06",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-10",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-08-17",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-09-03",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-09-08",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-09-13",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-09-21",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-10-17",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-10-23",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-10-27",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-10-28",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-11-13",
+        "reason": "confirmed absent from NLDC archive -- no source file under any filename (Phase 0 audit, 2026-07-10)"
+      },
+      {
+        "date": "2020-11-15",
+        "reason": "confirmed absent from NLDC archive -- no source file under any filename (Phase 0 audit, 2026-07-10)"
+      },
+      {
+        "date": "2020-11-29",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-12-03",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-12-14",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-12-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2020-12-16",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-01-03",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-02-18",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-02-27",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-07-17",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2021-12-12",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-03-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-03-16",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-07-20",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-08-21",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-08-29",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-09-15",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-09-16",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-09-20",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2022-10-10",
+        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+      },
+      {
+        "date": "2025-05-22",
+        "reason": "confirmed absent -- direct probe against NLDC's CDN (.xls and .pdf URLs) returns clean 404s, not errors (2026-07-10)"
+      },
+      {
+        "date": "2025-05-23",
+        "reason": "confirmed absent -- direct probe against NLDC's CDN (.xls and .pdf URLs) returns clean 404s, not errors (2026-07-10)"
+      }
+    ],
+    "study2_scada": [
+      {
+        "date": "2025-05-22",
+        "reason": "confirmed absent -- direct probe against NLDC's CDN (.xls and .pdf URLs) returns clean 404s, not errors (2026-07-10)"
+      },
+      {
+        "date": "2025-05-23",
+        "reason": "confirmed absent -- direct probe against NLDC's CDN (.xls and .pdf URLs) returns clean 404s, not errors (2026-07-10)"
+      },
+      {
+        "date": "2025-06-04",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-06-11",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-06-12",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-06-19",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-06-28",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-07-13",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-07-15",
+        "reason": "source XLS exists with a TimeSeries sheet present, but the sheet has 0 data rows (header/disclaimer only) -- confirmed by direct inspection 2026-07-11, a genuine NLDC-side gap, not a parser bug"
+      },
+      {
+        "date": "2025-07-29",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-08-07",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-08-20",
+        "reason": "source XLS exists with a TimeSeries sheet present, but the sheet has 0 data rows (header/disclaimer only) -- confirmed by direct inspection 2026-07-11, a genuine NLDC-side gap, not a parser bug"
+      },
+      {
+        "date": "2025-08-21",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-09-09",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2025-11-10",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2026-03-27",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      },
+      {
+        "date": "2026-07-08",
+        "reason": "source file published as PDF only (no TimeSeries sheet possible) -- confirmed by checking Dataset/Raw/File3_Raw 2026-07-11, a genuine NLDC format limitation for this date, not a parser bug"
+      }
+    ]
+  }
+}

@@ -39,6 +39,8 @@ Exit code 0 means no FAILs. Exit code 1 means at least one check failed.
 
 ## Checks run per dataset
 
+All four datasets also get two checks not repeated in each table below (added 2026-07-11, see the dated section further down): a **date-gap check** against `Pipeline/known_gaps.json` (FAIL if a missing date isn't in that file) and a **null-drift check** against `Pipeline/null_baselines.json` (WARN if a column's null% rises more than 5 percentage points above its stored baseline).
+
 ### study1_daily
 
 | Check | Level if triggered | Threshold |
@@ -61,7 +63,7 @@ The 7 IR corridors checked are: ER-NR, ER-WR, ER-SR, ER-NER, NER-NR, WR-NR, WR-S
 | Row count | FAIL | Must be >= 55,068 |
 | Duplicate (date, hhmm) pairs | FAIL | Zero allowed |
 | Data freshness | WARN | Latest date must be within 5 days of today |
-| 63-slot days | FAIL | Zero allowed (these indicate a legacy parse error) |
+| Days with < 90 slots | FAIL | Zero allowed — corrupted source file (generalized 2026-07-11 from a 63-slot-only check; see below) |
 | Days outside 95-98 slots | FAIL if > 10 days, WARN if <= 10 | Each day should have 96 fifteen-minute slots |
 | Days not exactly 96 slots | WARN | Informational count only |
 | `freq_hz` range | WARN | Values must be within [47, 52] Hz |
@@ -97,9 +99,28 @@ If a parser change intentionally adds or removes columns, update `BASELINE_COLS`
 
 ## Checks not included
 
-- Null percentage per column compared to a stored baseline. This would require a snapshot file and was deferred as the datasets are still growing.
-- Date continuity check against the known 70-gap list. The gap list exists in the roadmap as prose but is not machine-readable. If that list is ever exported to a file, a continuity check can be added here.
 - Cross-dataset consistency (e.g., confirming that study2_scada covers the same date range as study1_daily post-2024).
+
+(Null-percentage drift and gap-list continuity — previously listed here as not-yet-implemented — were both added 2026-07-11; see below.)
+
+---
+
+## Date-gap and null-drift checks, added 2026-07-11
+
+**Date-gap check** (`_check_date_gaps`): for each dataset, computes the actual missing dates within its own min-max range and compares them against `Pipeline/known_gaps.json`. Any date missing from the CSV but NOT in that file gets a FAIL, naming the specific unexplained date(s). Replaces relying on a human noticing a new gap.
+
+`known_gaps.json` itself was built 2026-07-11 by scanning each dataset's real, current missing dates from scratch — not reconstructed from the roadmap's old prose categories, which (worth noting) never actually summed to their own stated total (57 + 20 + 3 = 80, not 70 — an arithmetic error that had sat undetected). The fresh scan found:
+- `study1_daily`: 69 missing dates (matches Phase 3's earlier independent count).
+- `study3_states`: 70 (the same 69 plus one `study3_states`-only gap — see below).
+- `study2_scada`: **17 fully-missing dates, none previously documented anywhere in the roadmap** (distinct from the 3 already-known corrupted-file days, which exist but with too few slots). Investigated all 17 directly against `Dataset/Raw/File3_Raw/`: 13 have only a PDF source published for that date (a PDF can't contain the `TimeSeries` sheet SCADA data comes from — a genuine NLDC format limitation), 2 (`2025-07-15`, `2025-08-20`) have an XLS with a `TimeSeries` sheet present but zero data rows (confirmed by direct inspection — header/disclaimer only), and 2 are the already-known 2025-05-22/23 gap.
+
+Also found while re-deriving this list: the `study3_states`-only Hindi-PDF gap was previously documented as `2019-05-10`, but is actually `2019-05-09` — confirmed from the source PDF's own English-language subject line, which differs from the filename date (`10.05.19`) by the same filename-vs-data-date offset this project has hit before. Fixed in `parse_psp_states_notes.md` and `ROADMAP.md`.
+
+Only 4 of the 69 `study1_daily` gaps have an individually-confirmed root cause (2020-11-13, 2020-11-15, 2025-05-22, 2025-05-23); the rest carry a generic "documented in the aggregate roadmap categories, not individually re-verified" reason in `known_gaps.json` — an honest gap in provenance, not a claim that they're all root-caused.
+
+**Null-drift check** (`_check_null_drift`): compares each column's current null% against a stored baseline in `Pipeline/null_baselines.json`, WARNing if it rises more than 5 percentage points. Deliberately relative to a per-column baseline rather than an absolute rule — most columns are legitimately high-null by design (`ir_*`/`xb_*` only populated from 2023+, `wind_gen_er_mu`/`wind_gen_ner_mu` near 100% since ER/NER have no wind generation), so "any nulls = warning" would be constant noise.
+
+Both checks were sanity-tested against a fabricated regression (a synthetic missing date not in the known-gaps file; a column forced to 50% null) before being trusted — both fired correctly, confirming the checks aren't vacuously passing.
 
 ---
 

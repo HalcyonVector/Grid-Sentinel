@@ -1,6 +1,8 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-11 (Phase 4 built and verified end-to-end: ML/Study2/features.py, all 5 notebooks (Era 2 daily correlation, Era 3 EDA, feature table, violation baseline, ramp-shock baseline), and ML/Study2/predict.py, wired into CI — closing Phase 4's only deferred item (owner). Every notebook's embedded numbers were independently re-executed against live data and matched exactly, not just written and assumed correct. Phase 4's real, honestly-reported results: ramp-shock lead-time classifier works well (PR-AUC 0.714, 4x lift over base rate); frequency-violation lead-time classifier is much weaker (PR-AUC 0.061, ~2x lift) — reported as-is, not dressed up. See Phase 4 below for full detail.)_
+_Last updated: 2026-07-11 (later same day) — closed out the open items from Phase 0-4's post-build audit, all goal-driven not just cosmetic: (1) violation classifier lead-window experiment (1/2/3/4 slots) added to 03_violation_baseline.ipynb — a genuine trade-off, not a clean win, documented honestly; (2) hour×day-of-week heatmap + a month-controlled re-analysis added to 01_eda.ipynb, which reverses the earlier "RES-share vs ramp rate" finding once season is properly controlled for; (3) Pipeline/known_gaps.json built from a fresh, complete re-scan of every dataset's actual missing dates (not the old prose-only list), wired into validate.py, and it caught two real, previously-undocumented issues along the way — a 1-day date error (2019-05-10 → 2019-05-09) and 17 previously-undocumented missing dates in study2_scada; (4) a null-%-drift check added to validate.py. See each phase's section below for full detail.)_
+
+_Previous update, 2026-07-11 (morning): Phase 4 built and verified end-to-end: ML/Study2/features.py, all 5 notebooks (Era 2 daily correlation, Era 3 EDA, feature table, violation baseline, ramp-shock baseline), and ML/Study2/predict.py, wired into CI — closing Phase 4's only deferred item (owner). Every notebook's embedded numbers were independently re-executed against live data and matched exactly, not just written and assumed correct. Phase 4's real, honestly-reported results: ramp-shock lead-time classifier works well (PR-AUC 0.714, 4x lift over base rate); frequency-violation lead-time classifier is much weaker (PR-AUC 0.061, ~2x lift) — reported as-is, not dressed up._
 
 _Previous update, 2026-07-10: Phase 2 fully complete: merged-blob fix, 2014 bogus-date bug, and new study3_states.csv all built and verified; Phase 3 naive-persistence anchor bug found, fixed, and re-verified, plus ML/Study1/predict.py built and wired into CI closing Phase 3's last deferred item; Phase 0-1 adversarially re-audited — 164/165 discrepancy resolved, build_data_dict.py gap found and fixed, data_dictionary.xlsx committed and added to the Kaggle push, a real gap in daily_scrape.yml where study3_states.csv was never being committed found and fixed, and the original 8-date spot-check fully re-derived from scratch — ~280 field comparisons, 0 mismatches._
 
@@ -126,16 +128,21 @@ Everything here is done and verified. Datasets are as clean as the source data a
 | `run_download.bat` scheduled locally (12pm + 8pm) to catch up if GitHub Actions misses a day | ✅ |
 | **Fallback extended to 5 days** — `local_download.py` now checks today through today−4 so missed days are caught even after the laptop is off for a weekend | ✅ |
 
-### Known irreducible gaps in study1_daily (70 total)
+### Known irreducible gaps in study1_daily (69 total, re-verified 2026-07-11)
 
-| Category | Count |
+**Correction, 2026-07-11:** the category table below (57 + 20 + 3 = 80) never actually summed to its own stated "70 total" — an arithmetic error that sat undetected since this table was first written, because the categorization was prose, not re-derived from the live data. Replaced with a real, current, complete count: **69 missing dates**, computed directly from `study1_daily.csv`'s actual date range (matches Phase 3's independent audit, which separately found "69 missing dates ... consistent with Phase 0 documentation"). The full enumerated list (all 69 dates) now lives in `Pipeline/known_gaps.json`, checked automatically by `validate.py` on every run — see 1b below. The old category breakdown is kept for rough context only, not as a verified figure:
+
+| Category (rough, unverified breakdown) | Count |
 |----------|-------|
-| Duplicate subject-line dates (NLDC publishing irregularities, mostly 2020 COVID era) | 57 |
-| Confirmed unavailable from NLDC server (public holidays) | 20 |
-| Edge cases (2018-12-31, 2025-05-22/23) | 3 |
-| **Total** | **70** |
+| Duplicate subject-line dates (NLDC publishing irregularities, mostly 2020 COVID era) | ~57 |
+| Confirmed unavailable from NLDC server (public holidays) | ~20 |
+| Edge cases (2018-12-31, 2025-05-22/23) | ~3 |
+
+Only 4 of the 69 have an individually-confirmed root cause (2020-11-13, 2020-11-15, 2025-05-22, 2025-05-23 — see `Pipeline/known_gaps.json`); the rest are real, confirmed-missing dates whose specific category was never individually re-verified against the raw archive, only assumed from the aggregate table above.
 
 Treat with forward-fill or time-series-aware imputation at model time.
+
+**New finding, 2026-07-11:** `study2_scada.csv` has its own, previously undocumented set of **17 fully-missing dates** (distinct from the 3 already-documented corrupted-file days below, which exist but with too few slots). Investigated all 17 directly against `Dataset/Raw/File3_Raw/`: 2 are the already-known 2025-05-22/23 NLDC-wide gap; 13 have only a PDF source file published for that date (no `TimeSeries` sheet is possible in a PDF, so no SCADA rows can be extracted — a genuine NLDC format limitation, not a parser bug); 2 (`2025-07-15`, `2025-08-20`) have an XLS file with a `TimeSeries` sheet present but containing zero data rows (header/disclaimer only, confirmed by direct inspection) — also a genuine source-side gap. Full list and per-date reasons in `Pipeline/known_gaps.json`.
 
 ### Residual parser gap ✅ CLOSED (2026-07-10)
 
@@ -187,8 +194,12 @@ Script: `Pipeline/validate.py`. Run after every rebuild. Exits 0 on all pass, 1 
 | Days with slot count outside {95, 96, 97, 98}: > 10 days | study2_scada | FAIL |
 | Days with slot count outside {95, 96, 97, 98}: <= 10 days | study2_scada | WARN |
 | `freq_hz` outside [47, 52] Hz | study2_scada | WARN |
+| Date gaps not in `Pipeline/known_gaps.json` (new/unexplained) | all four | **FAIL** |
+| Column null% risen >5pp above `Pipeline/null_baselines.json` | all four | WARN |
 
-Checks not yet implemented: null % per column vs stored baseline; date continuity against the known 70-gap list (gap list is prose in this roadmap, not machine-readable).
+Both checks added 2026-07-11, closing what was previously listed here as "not yet implemented":
+- **Known-gaps check:** `Pipeline/known_gaps.json` replaces the prose-only gap list with a real, machine-readable enumeration — built from a fresh, complete scan of each dataset's actual missing dates (not reconstructed from the old prose categories, which turned out to not even sum correctly — see the Phase 0 section above). Any gap not in that file hard-FAILs, on the theory that an unexplained new hole is either a real regression or a real new NLDC-side gap that needs the same individual verification the existing entries got, not something to wave through.
+- **Null-drift check:** `Pipeline/null_baselines.json` stores each column's current null% as a baseline; a column whose null% rises more than 5 percentage points above it gets a WARN. Deliberately relative to a stored baseline, not an absolute threshold — most columns are legitimately high-null by design (`ir_*`/`xb_*` only populated from 2023+, `wind_gen_er_mu`/`wind_gen_ner_mu` near 100% since those regions have no wind generation), so an absolute "no nulls" rule would be constant noise. Both checks were sanity-tested against a synthetic regression (a fabricated new gap date, a column forced to 50% null) before being trusted — both fired correctly.
 
 > **Col count note — resolved 2026-07-10:** study2_scada's 164 columns are exactly `study1_daily`'s 144 columns (fully present, none missing — verified by direct diff) plus exactly 20 real-time/SCADA-specific columns (`time`, `hhmm`, `freq_hz`, `demand_met_mw`, per-source real-time generation, `net_demand_met_mw`, `total_gen_mw`, `net_trans_exchange_mw`, and 6 `time_max_demand_met_*` columns). 144 + 20 = 164 exactly, no gap. The "165" in earlier roadmap prose was a stale estimate written before the dataset was actually built and counted — not a missing column.
 
@@ -278,7 +289,7 @@ The full 70-gap enumeration was not re-derived exhaustively (that would mean che
 
 One row (`state` literally extracted as `"0"`, 2023-12-04) is the same header-corruption pattern as fix 2a but corrupting a state name instead of a column header — dropped rather than guessed, since which state it was can't be recovered without manually opening that file.
 
-**Known residual gap:** `10.05.19_NLDC_PSP.pdf` is rendered entirely in Hindi/Devanagari (not NLDC's usual bilingual format) — the only PDF in the whole archive like this. The English-language "States" section-header match can't find it, so that single date has no §C data. `study1_daily`/`study1_hourly` aren't affected (their parsers don't depend on that text match). Not worth a Hindi-specific fix for one file; treated the same as the other rare, low-value gaps documented in Phase 0.
+**Known residual gap:** `10.05.19_NLDC_PSP.pdf` is rendered entirely in Hindi/Devanagari (not NLDC's usual bilingual format) — the only PDF in the whole archive like this. The English-language "States" section-header match can't find it, so that file's date has no §C data. `study1_daily`/`study1_hourly` aren't affected (their parsers don't depend on that text match). **Date correction, 2026-07-11:** the missing row is for **2019-05-09**, not 2019-05-10 as previously stated here — confirmed directly from the PDF's own (English-language) subject line, "Sub: Daily PSP Report for the date 09.05.2019," despite the file being named `10.05.19` (the filename-date-vs-data-date offset this project has documented elsewhere). Not worth a Hindi-specific fix for one file; treated the same as the other rare, low-value gaps documented in Phase 0.
 
 **Schema:** `date, region, state,` then 7 metrics (`max_demand_met_mw`, `shortage_max_demand_mw`, `energy_met_mu`, `drawal_schedule_mu`, `od_ud_mu`, `max_od_mw`, `energy_shortage_mu`). Long format chosen over wide (one row per date) because ~40 states × 7 metrics would mean ~280 columns — long format matches how a per-entity time series is actually queried/joined.
 
@@ -287,7 +298,7 @@ One row (`state` literally extracted as `"0"`, 2023-12-04) is the same header-co
 ### Still open (both low priority, unchanged — this was never expected to fully close)
 
 1. 2025-05-22/23 backfill — not actionable until/unless NLDC re-publishes those dates on their own end. Re-checked directly on 2026-07-10 using the actual production downloader (`download_psp_new.old_url()` + `fetch_bytes()`, which already handles NLDC's TLS cert issue via `verify=False` — no tooling limitation this time): both the `.xls` and `.pdf` URLs for both dates return clean 404s, not errors. Cross-checked against the raw archive's filename sequence — `01.05.25` through `21.05.25` are present with no gaps, then it jumps straight to `24.05.25` with no offset or renamed file hiding in between. This is a genuine, confirmed 2-day hole in what NLDC published, not a scraper or tooling gap on our end.
-2. `10.05.19` Hindi-only PDF gap in `study3_states.csv` — see above, low value to fix for one date.
+2. `10.05.19` Hindi-only PDF gap in `study3_states.csv` (missing date: 2019-05-09, corrected 2026-07-11) — see above, low value to fix for one date.
 
 ### Where the code lives
 
@@ -539,11 +550,26 @@ Every number below was independently re-executed against the live dataset (56,98
 
 **Era 3 EDA** (`01_eda.ipynb`, live `study2_scada.csv`, Nov 2024–present): overall violation rate 0.89%, ramp-shock rate 6.1%. Both cluster sharply and physically-explainably by time of day: violations peak 08:00-09:00 and 13:00 (up to 4.0%, solar variability hours), ramp-shocks peak at sunrise (05:00-09:00, up to 36% at 06:00) and sunset (17:00-20:00, up to 8.6%) — the two windows solar output changes fastest. Violation rate rises **monotonically** with RES-share quintile (0.33% → 1.92%) — direct SCADA-resolution evidence for the project's central "rising RES share stresses the grid" thesis. Ramp-shock rate vs. RES-share quintile goes the *other* direction in simple binning (8.3% → 2.8%) — flagged as a genuine, unresolved, likely season-confounded finding (RES share and ramp rate are both strongly seasonal independently), not smoothed over.
 
+**Resolved, 2026-07-11** (appended to `01_eda.ipynb` as a second cell): the RES-share/ramp-rate finding above was tested for season confounding directly, not left as a caveat. Ranking RES share *within* each month first (instead of pooling across months) reverses the pooled finding: ramp rate **rises** from 5.3% to 7.0% across within-month RES-share quintiles, and the partial correlation (residualized on month) flips from -0.075 (pooled) to +0.026 (season-controlled) — small, but now the same direction as the violation-rate finding (+0.051) and the project's central thesis. The pooled number wasn't just imprecise, it was pointing the wrong way — season-controlling was necessary here, not just more rigorous.
+
+**Hour × day-of-week heatmap** (same cell): violations concentrate hardest on **Sunday** — the single worst slot is Sunday 13:00 (7.0%), and Sunday's marginal violation rate (1.38%) is the week's highest, well above any weekday (0.62-0.99%). Ramp-shocks show the opposite day-of-week pattern: Sunday's marginal ramp rate (4.40%) is the week's *lowest*, while weekdays sit around 6.4-6.7%. That decoupling is a genuine, non-obvious finding: fewer large demand swings on Sunday (lower industrial/commercial load) but more frequency violations — consistent with the grid running a thinner online generation/reserve margin on a low-demand day, making frequency more sensitive to smaller disturbances.
+
 **Frequency-violation classifier** (`03_violation_baseline.ipynb`, LightGBM, time-aware split 2024-11→2025-06 train / 2025-07→2025-12 val / 2026 test): **PR-AUC 0.0614** vs. a 0.0305 base-rate baseline (~2x lift). F1 at a naive 0.5 threshold is 0.0000 (positive rate too low for that threshold to ever fire); at the best-F1 operating point (threshold ≈0.14): **F1 0.1297, precision 7.4%, recall 54.6%** — catches over half of upcoming violations 15-60 min ahead, at real cost in false alarms. Recall at ≥95% precision is effectively 0 — a high-confidence-only alert mode isn't achievable with this feature set yet. **Reported as a weak-but-real baseline, not oversold.**
 
 **Ramp-shock classifier** (`04_ramp_shock_baseline.ipynb`, same split/pipeline): **PR-AUC 0.7140** vs. a 0.1793 base-rate baseline (~4x lift) — a genuinely strong signal. F1@0.5 = 0.6293. Recall at ≥95% precision = 17.7%. Top features: `hour`, `demand_delta_mw`, recent demand lags — consistent with the EDA's sunrise/sunset clustering. Corridor columns place in the top 10 but are secondary to the time/demand signal, consistent with Era 2's finding that corridor flow has a real but non-dominant relationship with stress.
 
-**Honest takeaway:** ramp-shock lead-time prediction works well from this feature set; frequency-violation lead-time prediction is much harder and only modestly better than chance — plausibly because a violation is a downstream, AGC/reserve-mediated consequence of a ramp rather than a direct mechanical property of it. Both results and the gap between them are reported as-is; future work (finer time-of-day binning, shorter lead horizon, or a two-stage ramp→violation model) is noted in `03_violation_baseline.ipynb` rather than pursued now.
+**Honest takeaway:** ramp-shock lead-time prediction works well from this feature set; frequency-violation lead-time prediction is much harder and only modestly better than chance — plausibly because a violation is a downstream, AGC/reserve-mediated consequence of a ramp rather than a direct mechanical property of it. Both results and the gap between them are reported as-is.
+
+**Lead-window experiment, 2026-07-11** (appended to `03_violation_baseline.ipynb` as a second cell): does shrinking the violation target's lookahead from 1-4 slots help? `features.py`'s `add_violation_label()` and `build_feature_table()` were parameterized (`lead_slots` / `violation_lead_slots`, default unchanged at 4) to test this without disturbing the shipped baseline or the ramp-shock target. Real result, not a clean win:
+
+| lead_slots | base rate | PR-AUC | lift over base rate | best-F1 | precision | recall |
+|---|---|---|---|---|---|---|
+| 4 (shipped, 15-60 min) | 3.05% | 0.0614 | 2.01x | 0.1297 | 7.4% | 54.6% |
+| 3 (15-45 min) | 2.46% | 0.0487 | 1.98x | 0.1119 | 6.2% | 58.6% |
+| 2 (15-30 min) | 1.81% | 0.0562 | 3.10x | 0.1486 | 9.0% | 41.9% |
+| 1 (15 min only) | 1.11% | 0.0828 | 7.47x | 0.1481 | 10.7% | 24.0% |
+
+Lift over base rate rises sharply as the window narrows (near-term prediction is easier), but recall falls just as sharply (fewer total violations get caught). 3 slots is even worse than 4 on every metric — evidence against reading too much into small window changes. 2 slots has the best F1 of all four and meaningfully better lift while keeping ~42% recall, but which window is actually "best" depends on what a real alert consumer wants (more warnings with more noise, vs. fewer higher-confidence warnings with less lead time) — an explicit product decision, not resolved here. **The shipped default remains 4 slots**, matching the roadmap's original 1-4-slot scope, unless that product call is made deliberately.
 
 ### Where the data lives
 
@@ -582,7 +608,7 @@ Three known bad days must be dropped before training: **2025-10-02** (63 slots, 
 - ✅ 15–60-min-ahead frequency-violation probability — `ML/Study2/predict.py`, `Dataset/predictions/study2_risk.csv`
 - ✅ 15–60-min-ahead ramp-shock probability — same output file
 - ✅ Feature importance: which corridor / cross-border level / forecast-residual is most predictive of each — printed in `03`/`04`'s notebooks
-- 🔲 Risk heatmap (time-of-day × day-of-week event frequency) — dashboard panel, deferred to Phase 5
+- ✅ Risk heatmap analysis (time-of-day × day-of-week event frequency) — the underlying analysis is now in `01_eda.ipynb` (added 2026-07-11); rendering it as an interactive dashboard widget is still Phase 5 work
 - ✅ Threshold analysis: precision-recall curve, best-F1 operating point, recall@95%precision — both targets
 
 ### Environment

@@ -20,6 +20,8 @@ Study 2 tries to answer, for every 15-minute slot of the day: "in the next 15-60
 
 Both are "OR over the lookahead window" labels, not "will it happen in exactly slot N" — this matches how an early-warning system would actually be used (any warning in the next hour is actionable), and it's why their positive rate (violation_lead ≈2.4%, ramp_lead ≈15%) is higher than the raw per-slot event rate (0.89% / 6.1%) reported in `01_eda.ipynb`.
 
+`add_violation_label()` and `build_feature_table()` both take a `lead_slots` / `violation_lead_slots` override (default 4, matching `LEAD_SLOTS`) — added 2026-07-11 so `03_violation_baseline.ipynb` could test shorter lead windows without disturbing the shipped default or the ramp-shock target. See that notebook's appendix for the real (mixed) result: shorter windows trade recall for precision/lift, no window is a clean winner, and 4 remains the shipped default.
+
 ---
 
 ## The contiguity guard — why this file doesn't just use `.shift()`

@@ -14,6 +14,7 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -23,6 +24,14 @@ import pandas as pd
 # ── Paths ─────────────────────────────────────────────────────────────────────
 REPO_ROOT   = Path(__file__).resolve().parent.parent
 DATASET_DIR = REPO_ROOT / "Dataset"
+KNOWN_GAPS_FILE = REPO_ROOT / "Pipeline" / "known_gaps.json"
+NULL_BASELINE_FILE = REPO_ROOT / "Pipeline" / "null_baselines.json"
+
+# A column's null% has to rise by more than this many percentage points above its
+# stored baseline to get flagged -- small fluctuations are expected as more rows
+# accumulate; this is tuned to catch a structural degradation (a field going from
+# "sometimes null" to "usually null"), not single-row noise.
+NULL_DRIFT_THRESHOLD_PP = 5.0
 
 STUDY1_D = DATASET_DIR / "study1_daily.csv"
 STUDY1_H = DATASET_DIR / "study1_hourly.csv"
@@ -90,6 +99,73 @@ def _load(path: Path, label: str) -> pd.DataFrame | None:
     return df
 
 
+def _load_known_gaps() -> dict:
+    if not KNOWN_GAPS_FILE.exists():
+        return {}
+    with open(KNOWN_GAPS_FILE, encoding="utf-8") as fh:
+        data = json.load(fh)
+    return {
+        dataset: {entry["date"] for entry in entries}
+        for dataset, entries in data.get("gaps", {}).items()
+    }
+
+
+_KNOWN_GAPS = _load_known_gaps()
+
+
+def _load_null_baselines() -> dict:
+    if not NULL_BASELINE_FILE.exists():
+        return {}
+    with open(NULL_BASELINE_FILE, encoding="utf-8") as fh:
+        return json.load(fh).get("null_pct_baseline", {})
+
+
+_NULL_BASELINES = _load_null_baselines()
+
+
+def _check_null_drift(df: pd.DataFrame, label: str) -> None:
+    """Flags a column whose null% has risen meaningfully above its stored baseline
+    -- catches a source format change silently degrading one field (e.g. a section
+    header the parser matches on shifting position) without needing every column to
+    be non-null, which most legitimately aren't (see null_baselines.json's _meta)."""
+    baseline = _NULL_BASELINES.get(label)
+    if not baseline:
+        return
+    current = (df.isna().mean() * 100).round(2)
+    drifted = []
+    for col, base_pct in baseline.items():
+        if col not in current.index:
+            continue
+        delta = current[col] - base_pct
+        if delta > NULL_DRIFT_THRESHOLD_PP:
+            drifted.append(f"{col} ({base_pct}% -> {current[col]}%)")
+    if drifted:
+        warn(label, f"{len(drifted)} column(s) with null% risen >{NULL_DRIFT_THRESHOLD_PP}pp above baseline: {drifted}")
+    else:
+        ok(label, "no column null% drifted above baseline")
+
+
+def _check_date_gaps(df: pd.DataFrame, label: str, date_col: str = "date") -> None:
+    """Compares the dataset's actual missing dates (within its own min-max range)
+    against Pipeline/known_gaps.json. A gap not in that file is either a genuine new
+    problem (scraper regression, parser bug) or a real new NLDC-side absence that
+    just hasn't been individually verified and added yet -- either way, it shouldn't
+    pass silently. See known_gaps.json's `_meta` block for how to regenerate it.
+    """
+    if date_col not in df.columns or not KNOWN_GAPS_FILE.exists():
+        return
+    dates = pd.to_datetime(df[date_col]).dt.date
+    present = set(dates)
+    full_range = pd.date_range(dates.min(), dates.max(), freq="D")
+    missing = {d.date().isoformat() for d in full_range if d.date() not in present}
+    known = _KNOWN_GAPS.get(label, set())
+    unexplained = sorted(missing - known)
+    if unexplained:
+        fail(label, f"{len(unexplained)} date gap(s) not in known_gaps.json (new/unexplained): {unexplained}")
+    else:
+        ok(label, f"all {len(missing)} date gap(s) accounted for in known_gaps.json")
+
+
 # ── study1_daily checks ───────────────────────────────────────────────────────
 
 def check_study1_daily() -> None:
@@ -113,12 +189,17 @@ def check_study1_daily() -> None:
     else:
         ok(label, f"row count = {n_rows:,}")
 
+    _check_null_drift(df, label)
+
     # Duplicate dates
     dupes = df["date"].duplicated().sum() if "date" in df.columns else 0
     if dupes:
         fail(label, f"{dupes} duplicate date(s) found")
     else:
         ok(label, "no duplicate dates")
+
+    # Date gaps vs. the known-gap list
+    _check_date_gaps(df, label)
 
     # Data freshness
     # NOTE: dates here are clean ISO (YYYY-MM-DD), which is unambiguous. Do NOT
@@ -196,6 +277,8 @@ def check_study2_scada() -> None:
     else:
         ok(label, f"row count = {n_rows:,}")
 
+    _check_null_drift(df, label)
+
     # Duplicate (date, hhmm) pairs
     if "date" in df.columns and "hhmm" in df.columns:
         dupes = df.duplicated(subset=["date", "hhmm"]).sum()
@@ -203,6 +286,11 @@ def check_study2_scada() -> None:
             fail(label, f"{dupes} duplicate (date, hhmm) pair(s)")
         else:
             ok(label, "no duplicate (date, hhmm) pairs")
+
+    # Date gaps vs. the known-gap list (fully-absent dates -- 0 slots -- distinct
+    # from the <90-slot severely-incomplete check below, which covers dates that
+    # exist but are corrupted)
+    _check_date_gaps(df, label)
 
     # Data freshness
     # NOTE: dates here are clean ISO (YYYY-MM-DD), which is unambiguous. Do NOT
@@ -288,6 +376,8 @@ def check_study1_hourly() -> None:
     else:
         ok(label, f"row count = {n_rows:,}")
 
+    _check_null_drift(df, label)
+
     # Datetime column
     # NOTE: previously parsed with format="mixed", dayfirst=True, which is wrong for this
     # column -- both `date` and `datetime` are uniformly ISO (YYYY-MM-DD[ HH:MM:SS]),
@@ -328,6 +418,8 @@ def check_study3_states() -> None:
     else:
         ok(label, f"row count = {n_rows:,}")
 
+    _check_null_drift(df, label)
+
     # Duplicate (date, state) pairs
     if "date" in df.columns and "state" in df.columns:
         dupes = df.duplicated(subset=["date", "state"]).sum()
@@ -335,6 +427,9 @@ def check_study3_states() -> None:
             fail(label, f"{dupes} duplicate (date, state) pair(s)")
         else:
             ok(label, "no duplicate (date, state) pairs")
+
+    # Date gaps vs. the known-gap list
+    _check_date_gaps(df, label)
 
     # Data freshness
     if "date" in df.columns:

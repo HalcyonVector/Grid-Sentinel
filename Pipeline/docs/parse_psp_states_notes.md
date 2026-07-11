@@ -41,7 +41,7 @@ One row where the state name itself extracted as the literal string `"0"` (2023-
 
 ## Known residual gap
 
-`10.05.19_NLDC_PSP.pdf` is rendered entirely in Hindi/Devanagari — the only report in the whole archive like this. The English-language `"states"` header match can't find it, so 2019-05-10 has no `study3_states` row. `study1_daily`/`study1_hourly` are unaffected since their parsers don't depend on this same text match. Not worth a Hindi-specific fix for one date.
+`10.05.19_NLDC_PSP.pdf` is rendered entirely in Hindi/Devanagari — the only report in the whole archive like this. The English-language `"states"` header match can't find it, so that file's date has no `study3_states` row. **Correction, 2026-07-11:** the missing date is **2019-05-09**, not 2019-05-10 as previously stated here — confirmed from the PDF's own English-language subject line ("Sub: Daily PSP Report for the date 09.05.2019"), which differs from its filename date due to the same filename-vs-data-date offset documented elsewhere in this project. `study1_daily`/`study1_hourly` are unaffected since their parsers don't depend on this same text match. Not worth a Hindi-specific fix for one date.
 
 ---
 
