@@ -38,6 +38,12 @@ Tested rather than assumed. Retraining both classifiers with these 12 columns ex
 
 ---
 
+## `freq_hz_delta` and `wind_delta_mw` — added 2026-07-11
+
+The diagnostic scan that originally found `solar_delta_mw` (see above) also found two other generation/frequency deltas with meaningful correlation to `violation_lead` that weren't acted on at the time: `freq_hz`'s own one-step delta (corr 0.0978 — actually the single highest correlation found in that entire scan) and `wind_delta_mw` (corr 0.0361, second among generation sources). Added to `add_slot_lag_features()` with the same contiguity guard, then tested before adopting: `violation_lead` PR-AUC 0.1186 → **0.1567** (+32%), `ramp_lead` PR-AUC 0.7446 → **0.7486** (smaller, real gain). Both have nonzero, meaningful feature-importance in both trained models — `wind_delta_mw` places in the top 12-15 for both targets; `freq_hz_delta` is more important for `violation_lead` specifically (rank ~8) than for `ramp_lead` (barely registers) — consistent with it being a more direct signal for a frequency-adjacent problem than a demand-driven one.
+
+---
+
 ## The contiguity guard — why this file doesn't just use `.shift()`
 
 A plain `df[col].shift(-k)` silently bridges gaps: if a day was dropped (see `drop_bad_days()` below) or the archive is missing a date, `shift(-k)` pulls in whatever row happens to be `k` rows away in the table — which might be hours or days away in real time, not `k * 15` minutes away. That would make the "no event in the next 4 slots" label wrong (actually unknown) without ever raising an error.

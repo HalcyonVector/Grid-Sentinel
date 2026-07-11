@@ -140,6 +140,16 @@ def add_slot_lag_features(df: pd.DataFrame) -> pd.DataFrame:
     gap_ok1 = (df["datetime"] - prev_dt1) == pd.Timedelta(minutes=SLOT_MINUTES)
     df["solar_delta_mw"] = np.where(gap_ok1, df["solar_mw"] - df["solar_mw"].shift(1), np.nan)
 
+    # freq_hz's own delta and wind_delta_mw -- added 2026-07-11, the two next-highest
+    # correlations with violation_lead from the same diagnostic scan that found
+    # solar_delta_mw (freq_hz delta: 0.0978, actually the single highest of everything
+    # scanned; wind_delta_mw: 0.0361, second among generation sources). Not added
+    # alongside solar_delta_mw originally -- only added now after being asked to. Tested
+    # empirically before being trusted, same as everything else in this file; see
+    # study2_features_notes.md for the verified before/after result.
+    df["freq_hz_delta"] = np.where(gap_ok1, df["freq_hz"] - df["freq_hz"].shift(1), np.nan)
+    df["wind_delta_mw"] = np.where(gap_ok1, df["wind_mw"] - df["wind_mw"].shift(1), np.nan)
+
     # rolling stats over the last 8 slots (2 hours) -- only meaningful if the window is
     # actually contiguous, so require the 8th-lag slot to be exactly 8*15min behind.
     window = 8
@@ -243,10 +253,17 @@ FEATURE_COLS = [
     "freq_hz_lag1", "freq_hz_lag2", "freq_hz_lag3",
     "demand_met_mw_lag1", "demand_met_mw_lag2", "demand_met_mw_lag3",
     "freq_hz_roll8_std", "demand_delta_roll8_std", "demand_delta_mw",
-    "solar_delta_mw", "solar_roll8_std",
+    "solar_delta_mw", "solar_roll8_std", "freq_hz_delta", "wind_delta_mw",
     "hour", "dow", "month", "is_weekend", "is_solar_hr",
     "net_trans_exchange_mw", "study1_residual_mw",
 ]
+# freq_hz_delta and wind_delta_mw added 2026-07-11 -- the two next-highest correlations
+# with violation_lead from the diagnostic scan that originally found solar_delta_mw
+# (freq_hz's own delta: 0.0978, the single highest of anything scanned; wind_delta_mw:
+# 0.0361). Tested before adopting: violation_lead PR-AUC 0.1186 -> 0.1567 (+32%),
+# ramp_lead PR-AUC 0.7446 -> 0.7486 (smaller but real gain). Both features have
+# nonzero, meaningful feature-importance contribution in both models, not just noise
+# that happened not to hurt.
 # share_res_pct and CORRIDOR_COLS deliberately excluded, found 2026-07-11: both are
 # whole-DAY aggregates broadcast identically to all 96 slots of that day (verified --
 # every row of a given date has the exact same share_res_pct/ir_*/xb_* value, unlike

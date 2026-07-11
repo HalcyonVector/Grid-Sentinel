@@ -1,194 +1,194 @@
 {
   "_meta": {
-    "generated": "2026-07-11",
-    "purpose": "Machine-readable known-gap dates for Pipeline/validate.py to check against, replacing the prose-only gap list in ROADMAP.md. A date missing from a dataset but NOT in this file is flagged as a new/unexplained gap.",
+    "generated": "2026-07-11 (root causes for all 65 previously-unverified study1_daily gaps re-derived 2026-07-11 night by re-parsing the full surrounding month for each date directly against the raw archive)",
+    "purpose": "Machine-readable known-gap dates for Pipeline/validate.py to check against, replacing the prose-only gap list in ROADMAP.md. A date missing from a dataset but NOT in this file is flagged as a new/unexplained gap. As of 2026-07-11 night, every study1_daily/study3_states gap has an individually-verified reason (49 confirmed duplicate NLDC republishes, 16 confirmed genuine archive gaps), not just the 4 spot-checked earlier plus a generic aggregate-category placeholder.",
     "how_to_regenerate": "Re-run the missing-date scan in this file's generating script against the current CSVs; new entries should get a real, individually-verified reason, not a copy-pasted generic one."
   },
   "gaps": {
     "study1_daily": [
       {
         "date": "2019-01-27",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 27.01.19_NLDC_PSP.pdf and 28.01.19_NLDC_PSP.pdf both carry the identical subject-line date 2019-01-26, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2019-05-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2019-05-10', '2019-05-11', '2019-05-12', '2019-05-13', '2019-05-15', '2019-05-16', '2019-05-17', '2019-05-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2019-06-05",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2019-06-01', '2019-06-02', '2019-06-03', '2019-06-04', '2019-06-06', '2019-06-07', '2019-06-08', '2019-06-09']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2019-09-30",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.10.19_NLDC_PSP.pdf and 02.10.19_NLDC_PSP.pdf both carry the identical subject-line date 2019-10-01, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2019-10-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2019-10-10', '2019-10-11', '2019-10-12', '2019-10-13', '2019-10-15', '2019-10-16', '2019-10-17', '2019-10-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2019-11-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2019-11-10', '2019-11-11', '2019-11-12', '2019-11-13', '2019-11-15', '2019-11-16', '2019-11-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2019-11-17",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.11.19_NLDC_PSP.pdf and 21.11.19_NLDC_PSP.pdf both carry the identical subject-line date 2019-11-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-01-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-01-10', '2020-01-11', '2020-01-12', '2020-01-13', '2020-01-15', '2020-01-16', '2020-01-17', '2020-01-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-02-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-02-10', '2020-02-11', '2020-02-12', '2020-02-13', '2020-02-16', '2020-02-17', '2020-02-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-02-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-02-11', '2020-02-12', '2020-02-13', '2020-02-16', '2020-02-17', '2020-02-18', '2020-02-19']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-03-28",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 29.03.20_NLDC_PSP.pdf and 30.03.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-03-29, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-03-30",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 29.03.20_NLDC_PSP.pdf and 30.03.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-03-29, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-04-05",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 08.04.20_NLDC_PSP.pdf and 09.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-08, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-04-12",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 08.04.20_NLDC_PSP.pdf and 09.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-08, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-04-19",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 23.04.20_NLDC_PSP.pdf and 24.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-23, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-04-27",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 23.04.20_NLDC_PSP.pdf and 24.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-23, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-05-04",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.05.20_NLDC_PSP.pdf and 30.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-30, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-05-13",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 16.05.20_NLDC_PSP.pdf and 17.05.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-05-16, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-05-21",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.05.20_NLDC_PSP.pdf and 25.05.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-05-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-05-29",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-05-25', '2020-05-26', '2020-05-27', '2020-05-28', '2020-05-30', '2020-05-31', '2020-06-01', '2020-06-02']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-06-06",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 04.06.20_NLDC_PSP.pdf and 05.06.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-06-04, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-06-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 16.06.20_NLDC_PSP.pdf and 17.06.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-06-16, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-06-23",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-06-19', '2020-06-20', '2020-06-21', '2020-06-22', '2020-06-24', '2020-06-25', '2020-06-26', '2020-06-27']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-06-30",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 28.06.20_NLDC_PSP.pdf and 29.06.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-06-28, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-05",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 02.07.20_NLDC_PSP.pdf and 03.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-02, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-08",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 06.07.20_NLDC_PSP.pdf and 07.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-06, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 10.07.20_NLDC_PSP.pdf and 11.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-10, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-07-11', '2020-07-12', '2020-07-13', '2020-07-17', '2020-07-18', '2020-07-19']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-07-16",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.07.20_NLDC_PSP.pdf and 21.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-21",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.07.20_NLDC_PSP.pdf and 21.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-24",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.07.20_NLDC_PSP.pdf and 21.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-30",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 26.07.20_NLDC_PSP.pdf and 27.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-26, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-01",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.08.20_NLDC_PSP.pdf and 31.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-31, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-06",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 03.08.20_NLDC_PSP.pdf and 04.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-03, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-10",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 07.08.20_NLDC_PSP.pdf and 08.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-07, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 13.08.20_NLDC_PSP.pdf and 14.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-13, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 13.08.20_NLDC_PSP.pdf and 14.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-13, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-17",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 13.08.20_NLDC_PSP.pdf and 14.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-13, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-09-03",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 06.09.20_NLDC_PSP.pdf and 07.09.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-09-06, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-09-08",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 06.09.20_NLDC_PSP.pdf and 07.09.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-09-06, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-09-13",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 09.09.20_NLDC_PSP.pdf and 10.09.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-09-09, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-09-21",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.09.20_NLDC_PSP.pdf and 25.09.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-09-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-10-17",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 18.10.20_NLDC_PSP.pdf and 19.10.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-10-18, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-10-23",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.10.20_NLDC_PSP.pdf and 25.10.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-10-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-10-27",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.10.20_NLDC_PSP.pdf and 25.10.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-10-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-10-28",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.10.20_NLDC_PSP.pdf and 25.10.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-10-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-11-13",
@@ -200,79 +200,79 @@
       },
       {
         "date": "2020-11-29",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.12.20_NLDC_PSP.pdf and 30.11.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-11-30, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-12-03",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.12.20_NLDC_PSP.pdf and 30.11.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-11-30, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-12-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-12-10', '2020-12-11', '2020-12-12', '2020-12-13', '2020-12-17', '2020-12-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-12-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-12-11', '2020-12-12', '2020-12-13', '2020-12-17', '2020-12-18', '2020-12-19']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-12-16",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-12-12', '2020-12-13', '2020-12-17', '2020-12-18', '2020-12-19', '2020-12-20']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2021-01-03",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-12-30', '2020-12-31', '2021-01-01', '2021-01-02', '2021-01-04', '2021-01-05', '2021-01-06', '2021-01-07']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2021-02-18",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 17.02.21_NLDC_PSP.pdf and 18.02.21_NLDC_PSP.pdf both carry the identical subject-line date 2021-02-17, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2021-02-27",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 26.02.21_NLDC_PSP.pdf and 27.02.21_NLDC_PSP.pdf both carry the identical subject-line date 2021-02-26, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2021-07-17",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 17.07.21_NLDC_PSP.pdf and 18.07.21_NLDC_PSP.pdf both carry the identical subject-line date 2021-07-18, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2021-12-12",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 11.12.21_NLDC_PSP.pdf and 12.12.21_NLDC_PSP.pdf both carry the identical subject-line date 2021-12-11, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-03-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2022-03-11', '2022-03-12', '2022-03-13', '2022-03-14', '2022-03-17', '2022-03-18', '2022-03-19']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2022-03-16",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2022-03-12', '2022-03-13', '2022-03-14', '2022-03-17', '2022-03-18', '2022-03-19', '2022-03-20']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2022-07-20",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 19.07.22_NLDC_PSP.pdf and 20.07.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-07-19, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-08-21",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.08.22_NLDC_PSP.pdf and 21.08.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-08-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-08-29",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 28.08.22_NLDC_PSP.pdf and 29.08.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-08-28, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-09-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 19.09.22_NLDC_PSP.pdf and 20.09.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-09-19, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-09-16",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 19.09.22_NLDC_PSP.pdf and 20.09.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-09-19, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-09-20",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 19.09.22_NLDC_PSP.pdf and 20.09.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-09-19, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-10-10",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 09.10.22_NLDC_PSP.pdf and 10.10.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-10-09, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2025-05-22",
@@ -286,7 +286,7 @@
     "study3_states": [
       {
         "date": "2019-01-27",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 27.01.19_NLDC_PSP.pdf and 28.01.19_NLDC_PSP.pdf both carry the identical subject-line date 2019-01-26, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2019-05-09",
@@ -294,183 +294,183 @@
       },
       {
         "date": "2019-05-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2019-05-10', '2019-05-11', '2019-05-12', '2019-05-13', '2019-05-15', '2019-05-16', '2019-05-17', '2019-05-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2019-06-05",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2019-06-01', '2019-06-02', '2019-06-03', '2019-06-04', '2019-06-06', '2019-06-07', '2019-06-08', '2019-06-09']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2019-09-30",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.10.19_NLDC_PSP.pdf and 02.10.19_NLDC_PSP.pdf both carry the identical subject-line date 2019-10-01, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2019-10-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2019-10-10', '2019-10-11', '2019-10-12', '2019-10-13', '2019-10-15', '2019-10-16', '2019-10-17', '2019-10-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2019-11-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2019-11-10', '2019-11-11', '2019-11-12', '2019-11-13', '2019-11-15', '2019-11-16', '2019-11-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2019-11-17",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.11.19_NLDC_PSP.pdf and 21.11.19_NLDC_PSP.pdf both carry the identical subject-line date 2019-11-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-01-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-01-10', '2020-01-11', '2020-01-12', '2020-01-13', '2020-01-15', '2020-01-16', '2020-01-17', '2020-01-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-02-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-02-10', '2020-02-11', '2020-02-12', '2020-02-13', '2020-02-16', '2020-02-17', '2020-02-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-02-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-02-11', '2020-02-12', '2020-02-13', '2020-02-16', '2020-02-17', '2020-02-18', '2020-02-19']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-03-28",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 29.03.20_NLDC_PSP.pdf and 30.03.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-03-29, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-03-30",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 29.03.20_NLDC_PSP.pdf and 30.03.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-03-29, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-04-05",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 08.04.20_NLDC_PSP.pdf and 09.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-08, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-04-12",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 08.04.20_NLDC_PSP.pdf and 09.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-08, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-04-19",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 23.04.20_NLDC_PSP.pdf and 24.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-23, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-04-27",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 23.04.20_NLDC_PSP.pdf and 24.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-23, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-05-04",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.05.20_NLDC_PSP.pdf and 30.04.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-04-30, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-05-13",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 16.05.20_NLDC_PSP.pdf and 17.05.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-05-16, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-05-21",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.05.20_NLDC_PSP.pdf and 25.05.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-05-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-05-29",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-05-25', '2020-05-26', '2020-05-27', '2020-05-28', '2020-05-30', '2020-05-31', '2020-06-01', '2020-06-02']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-06-06",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 04.06.20_NLDC_PSP.pdf and 05.06.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-06-04, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-06-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 16.06.20_NLDC_PSP.pdf and 17.06.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-06-16, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-06-23",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-06-19', '2020-06-20', '2020-06-21', '2020-06-22', '2020-06-24', '2020-06-25', '2020-06-26', '2020-06-27']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-06-30",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 28.06.20_NLDC_PSP.pdf and 29.06.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-06-28, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-05",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 02.07.20_NLDC_PSP.pdf and 03.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-02, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-08",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 06.07.20_NLDC_PSP.pdf and 07.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-06, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 10.07.20_NLDC_PSP.pdf and 11.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-10, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-07-11', '2020-07-12', '2020-07-13', '2020-07-17', '2020-07-18', '2020-07-19']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-07-16",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.07.20_NLDC_PSP.pdf and 21.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-21",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.07.20_NLDC_PSP.pdf and 21.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-24",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.07.20_NLDC_PSP.pdf and 21.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-07-30",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 26.07.20_NLDC_PSP.pdf and 27.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-26, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-01",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.08.20_NLDC_PSP.pdf and 31.07.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-07-31, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-06",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 03.08.20_NLDC_PSP.pdf and 04.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-03, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-10",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 07.08.20_NLDC_PSP.pdf and 08.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-07, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 13.08.20_NLDC_PSP.pdf and 14.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-13, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 13.08.20_NLDC_PSP.pdf and 14.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-13, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-08-17",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 13.08.20_NLDC_PSP.pdf and 14.08.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-08-13, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-09-03",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 06.09.20_NLDC_PSP.pdf and 07.09.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-09-06, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-09-08",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 06.09.20_NLDC_PSP.pdf and 07.09.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-09-06, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-09-13",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 09.09.20_NLDC_PSP.pdf and 10.09.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-09-09, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-09-21",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.09.20_NLDC_PSP.pdf and 25.09.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-09-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-10-17",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 18.10.20_NLDC_PSP.pdf and 19.10.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-10-18, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-10-23",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.10.20_NLDC_PSP.pdf and 25.10.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-10-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-10-27",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.10.20_NLDC_PSP.pdf and 25.10.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-10-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-10-28",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 24.10.20_NLDC_PSP.pdf and 25.10.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-10-24, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-11-13",
@@ -482,79 +482,79 @@
       },
       {
         "date": "2020-11-29",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.12.20_NLDC_PSP.pdf and 30.11.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-11-30, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-12-03",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 01.12.20_NLDC_PSP.pdf and 30.11.20_NLDC_PSP.pdf both carry the identical subject-line date 2020-11-30, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2020-12-14",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-12-10', '2020-12-11', '2020-12-12', '2020-12-13', '2020-12-17', '2020-12-18']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-12-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-12-11', '2020-12-12', '2020-12-13', '2020-12-17', '2020-12-18', '2020-12-19']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2020-12-16",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-12-12', '2020-12-13', '2020-12-17', '2020-12-18', '2020-12-19', '2020-12-20']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2021-01-03",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2020-12-30', '2020-12-31', '2021-01-01', '2021-01-02', '2021-01-04', '2021-01-05', '2021-01-06', '2021-01-07']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2021-02-18",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 17.02.21_NLDC_PSP.pdf and 18.02.21_NLDC_PSP.pdf both carry the identical subject-line date 2021-02-17, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2021-02-27",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 26.02.21_NLDC_PSP.pdf and 27.02.21_NLDC_PSP.pdf both carry the identical subject-line date 2021-02-26, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2021-07-17",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 17.07.21_NLDC_PSP.pdf and 18.07.21_NLDC_PSP.pdf both carry the identical subject-line date 2021-07-18, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2021-12-12",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 11.12.21_NLDC_PSP.pdf and 12.12.21_NLDC_PSP.pdf both carry the identical subject-line date 2021-12-11, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-03-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2022-03-11', '2022-03-12', '2022-03-13', '2022-03-14', '2022-03-17', '2022-03-18', '2022-03-19']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2022-03-16",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed genuine archive gap (2026-07-11 audit, re-parsed the full surrounding month directly): no raw file under any nearby filename resolves to this date -- the archive itself has a filename-sequence hole in this window (surrounding coverage: ['2022-03-12', '2022-03-13', '2022-03-14', '2022-03-17', '2022-03-18', '2022-03-19', '2022-03-20']), not a parser issue and not a duplicate-collision side effect."
       },
       {
         "date": "2022-07-20",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 19.07.22_NLDC_PSP.pdf and 20.07.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-07-19, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-08-21",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 20.08.22_NLDC_PSP.pdf and 21.08.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-08-20, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-08-29",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 28.08.22_NLDC_PSP.pdf and 29.08.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-08-28, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-09-15",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 19.09.22_NLDC_PSP.pdf and 20.09.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-09-19, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-09-16",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 19.09.22_NLDC_PSP.pdf and 20.09.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-09-19, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-09-20",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 19.09.22_NLDC_PSP.pdf and 20.09.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-09-19, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2022-10-10",
-        "reason": "documented in ROADMAP.md Phase 0's aggregate gap categories (duplicate subject-line date or confirmed-unavailable public holiday); not individually re-verified against the raw archive"
+        "reason": "confirmed duplicate NLDC republish (2026-07-11 audit, re-parsed the full surrounding month directly): 09.10.22_NLDC_PSP.pdf and 10.10.22_NLDC_PSP.pdf both carry the identical subject-line date 2022-10-09, so this date never received its own unique report -- NLDC republished existing content under a new filename instead of publishing new data for this date."
       },
       {
         "date": "2025-05-22",
