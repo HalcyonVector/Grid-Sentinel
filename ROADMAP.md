@@ -1,6 +1,8 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-11 (evening) — investigated whether the two-stage ramp→violation idea (flagged as future work) could improve the weak violation classifier. It couldn't, on the evidence: a diagnostic check found ramp-shocks don't actually precede violations more than chance, so the idea was abandoned rather than built on a falsified premise. Chasing a better-supported alternative (solar-generation volatility, not demand-side ramps) led to a bigger find: **`scale_pos_weight` was silently causing LightGBM's early stopping to fire after a single boosting round** for the violation target, capping it at close to one shallow tree. Fixing that (and adding the solar features) raised the violation classifier's PR-AUC from 0.0614 to 0.0937 (+53%) and best-F1 from 0.1297 to 0.1712, with a smaller but real gain on the already-strong ramp-shock classifier too (PR-AUC 0.7140 → 0.7248). Both baseline notebooks, `features.py`, and the live `predict.py` were all updated and re-verified. See Phase 4 below for the full corrected numbers and the diagnostic trail._
+_Last updated: 2026-07-11 (late evening) — two things: (1) Phase 6's paper framing rewritten to lead with the project's actual strongest material (the dataset, the season-controlled Era 3 RES-share finding, the day-of-week decoupling finding) instead of the weak violation classifier — see Phase 6's "Central claim" and "Paper structure" below, both marked as rewritten with the old framing kept visible for context; (2) found and fixed a real Colab-readiness bug in all 5 `ML/Study2` notebooks (an inconsistent `sys.path.insert` left over from earlier drafting, which assumed a different working directory than the `data/...` paths in the same cells) and made the previously-unwritten concrete Colab setup steps explicit in "ML Development Environment" — both matter for the collaborator actually being able to open and run these in Colab, not just for this session's local runs._
+
+_Previous update, 2026-07-11 (evening): investigated whether the two-stage ramp→violation idea (flagged as future work) could improve the weak violation classifier. It couldn't, on the evidence: a diagnostic check found ramp-shocks don't actually precede violations more than chance, so the idea was abandoned rather than built on a falsified premise. Chasing a better-supported alternative (solar-generation volatility, not demand-side ramps) led to a bigger find: **`scale_pos_weight` was silently causing LightGBM's early stopping to fire after a single boosting round** for the violation target, capping it at close to one shallow tree. Fixing that (and adding the solar features) raised the violation classifier's PR-AUC from 0.0614 to 0.0937 (+53%) and best-F1 from 0.1297 to 0.1712, with a smaller but real gain on the already-strong ramp-shock classifier too (PR-AUC 0.7140 → 0.7248). Both baseline notebooks, `features.py`, and the live `predict.py` were all updated and re-verified._
 
 _Previous update, 2026-07-11 (afternoon): closed out the open items from Phase 0-4's post-build audit, all goal-driven not just cosmetic: (1) violation classifier lead-window experiment (1/2/3/4 slots) added to 03_violation_baseline.ipynb; (2) hour×day-of-week heatmap + a month-controlled re-analysis added to 01_eda.ipynb, which reverses the earlier "RES-share vs ramp rate" finding once season is properly controlled for; (3) Pipeline/known_gaps.json built from a fresh, complete re-scan of every dataset's actual missing dates (not the old prose-only list), wired into validate.py, and it caught two real, previously-undocumented issues along the way — a 1-day date error (2019-05-10 → 2019-05-09) and 17 previously-undocumented missing dates in study2_scada; (4) a null-%-drift check added to validate.py._
 
@@ -338,6 +340,19 @@ GitHub repo (ML/ folder)
     |-- on merge: GitHub Actions runs predict.py to generate daily inference output (CSV, not JSON -- see Phase 3)
     |-- Kaggle: upload clean finished notebooks as dataset companion notebooks (portfolio)
 ```
+
+**Concrete Colab setup, made explicit 2026-07-11** (this was previously only described at the "open notebook in Colab" level above — never spelled out precisely, which meant it had never actually been verified end-to-end). Every notebook in both `ML/Study1/notebooks/` and `ML/Study2/notebooks/` assumes the working directory is the **study folder itself** (`ML/Study1/` or `ML/Study2/`), not the `notebooks/` subfolder the `.ipynb` file lives in — that's what makes a bare `import features` and a relative `data/study1_daily.csv` / `data/study2_scada.csv` path resolve correctly, matching the convention Study 1's notebooks were already built with:
+
+```
+!git clone https://github.com/HalcyonVector/Grid-Sentinel.git
+%cd Grid-Sentinel/ML/Study1        # or ML/Study2 -- NOT .../notebooks
+!kaggle datasets download -d halcyonvector/india-power-grid-nldc-daily-psp-reports -p data --unzip
+# then open/run the desired notebook from ML/Study1/notebooks/ or ML/Study2/notebooks/
+```
+
+**Study 2 has one new requirement Study 1 doesn't:** `ML/Study2/features.py`'s `build_study1_residual_signal()` loads `ML/Study1/features.py` directly off disk (via `importlib`, resolved relative to Study 2's own file location — see `study2_features_notes.md`), so **the full repo must be cloned**, not just the `ML/Study2/` folder on its own — downloading a single folder or uploading just `features.py` to a Colab session will fail with a `FileNotFoundError` looking for `ML/Study1/features.py`. `!git clone` (as above) already satisfies this; it's only a problem if someone tries to shortcut the setup.
+
+**Verified 2026-07-11:** all 5 `ML/Study2` notebooks were fixed (removed a leftover `sys.path.insert(0, "..")` that assumed a different, inconsistent working directory than the `data/...` paths in the same cells — a real bug that would have broken for whoever actually tried running them in Colab) and re-executed end to end with the working directory set to `ML/Study2/` and a real `data/study2_scada.csv` in place (simulating exactly what the Kaggle download step produces) — all numbers matched exactly. This session's actual work was done locally against the cloned repo's `Dataset/` folder directly, not in Colab (no Colab/Google access in this environment) — chosen for fast iteration and direct verification against live data, but every notebook was engineered and tested to match the Colab-ready convention above, not the local shortcut used to verify it.
 
 ### Code format
 
@@ -697,7 +712,7 @@ Frontend needs no build environment (plain HTML/JS, or a minimal static-site set
 
 ## Phase 6 — Research paper (conditional) 🔲
 
-**Decision gate:** after Phase 3 + 4 are complete, assess whether results are strong enough to publish. **Both are now complete (2026-07-11) — the gate has technically been reached.** Flagging, not deciding: Phase 4's results are mixed (ramp-shock baseline is strong at PR-AUC 0.714; frequency-violation baseline is weak at PR-AUC 0.061) — whether that's "strong enough," especially framed around the dataset-methodology contribution (which stands regardless of model strength) plus the Era 1/2/3 narrative rather than the violation classifier alone, is a call for Sagnik to make, not one made here.
+**Decision gate:** after Phase 3 + 4 are complete, assess whether results are strong enough to publish. **Both are now complete (2026-07-11) — the gate has technically been reached.** Flagging, not deciding: Phase 4's results are mixed (ramp-shock baseline is strong at PR-AUC 0.7248; frequency-violation baseline is weak at PR-AUC 0.0937, though improved from 0.0614 by the `scale_pos_weight` fix) — whether that's "strong enough" is still Sagnik's call, not one made here. **Recommended framing, added 2026-07-11 (see "Central claim" and "Paper structure" below, rewritten from the original draft):** don't lead with the violation classifier — lead with the dataset and the season-controlled Era 3 findings, and report the classifiers (both of them, strong and weak) as the applied deliverable that motivated digging into the data as deeply as this project did. That framing makes the project's actual strongest material the headline, and turns the violation classifier's weakness into an honest, specific research question rather than a soft spot to explain away.
 
 ### Goal
 
@@ -707,16 +722,19 @@ Publish the dataset methodology and/or the two studies' modelling results, if re
 
 Nothing — no draft, no venue chosen, no writing environment set up. This phase can't meaningfully start until Phase 3/4 produce results to write about.
 
-### Central claim
+### Central claim (rewritten 2026-07-11)
 
-Using a novel, openly-published, multi-granularity NLDC dataset (7 years, three complementary resolutions), this project traces how the observability and predictability of grid stress in India has evolved as both monitoring granularity and renewable penetration increased — and shows, for the first time (per the novelty check below), that inter-regional corridor congestion and cross-border exchange have measurable predictive value for short-term grid stress once that visibility exists in the data (2023 onward).
+**Old framing (superseded):** "shows, for the first time, that inter-regional corridor congestion and cross-border exchange have measurable predictive value for short-term grid stress" — this leads with the weakest piece of evidence (the violation classifier, PR-AUC 0.0937) and the null cross-border result, and doesn't reflect what the project actually found strongest.
+
+**New framing:** using a novel, openly-published, rigorously-verified, multi-granularity NLDC dataset (7 years, three complementary resolutions), this project traces how the observability and predictability of Indian grid stress evolved as both monitoring granularity and renewable penetration increased — and, once SCADA-resolution visibility exists (Nov 2024 onward), provides the first granular, reproducible, **season-controlled** evidence that rising RES share correlates with increased grid stress at 15-minute resolution, directly complementing the EAC-PM's July 2026 macro-level finding rather than just restating it. Two secondary, physically-grounded findings support this: inter-regional corridor flow functions as a **stress-relief** signal, not a stress-causing one (moderate negative correlation with next-day frequency instability); and grid stress exhibits a genuine day-of-week decoupling (Sunday has the week's highest frequency-violation rate but its lowest ramp-shock rate, consistent with thinner online reserve margins on a low-demand day). The project also reports, honestly and including a documented dead-end (a demand-side "does a ramp precede a violation" hypothesis that the data itself falsified), a first attempt at live corridor-aware lead-time classification of both ramp-shocks (strong, PR-AUC 0.72) and frequency violations (real but modest, PR-AUC 0.09) — the sharp gap between the two is itself evidence that these are mechanistically different phenomena, not just two flavors of "grid stress."
 
 ### Where the material will come from
 
 - Era 1 evidence: Phase 3's `04_era1_ramp_characterization.ipynb` (`study1_hourly.csv`, 2019–2022)
-- Era 2 evidence: Phase 4's `00_era2_daily_correlation.ipynb` (`study1_daily.csv`, 2023–Oct 2024)
-- Era 3 results: Phase 4's `03_violation_baseline.ipynb` + `04_ramp_shock_baseline.ipynb` (`study2_scada.csv`, Nov 2024–present), informed by Phase 3's forecast-residual signal
-- Dataset methodology section: this roadmap's Phase 0 (parser fixes, spot-check log) and Phase 1 (validation gate, data dictionary) sections, plus `Dataset/README.md`
+- Era 2 evidence: Phase 4's `00_era2_daily_correlation.ipynb` (`study1_daily.csv`, 2023–Oct 2024) — corridor-flow-as-relief-valve finding
+- Era 3 EDA: Phase 4's `01_eda.ipynb` — the season-controlled RES-share finding (both the pooled-vs-controlled reversal and the partial-correlation numbers) and the day-of-week decoupling are the two strongest individual results in the whole project and should anchor the Era 3 section, not just support it
+- Era 3 classifiers: `03_violation_baseline.ipynb` + `04_ramp_shock_baseline.ipynb` (`study2_scada.csv`, Nov 2024–present), informed by Phase 3's forecast-residual signal — report both results and the gap between them as a finding, plus the `scale_pos_weight` debugging story as a one-paragraph methods note (evidence of rigor, not a headline)
+- Dataset methodology section: this roadmap's Phase 0 (parser fixes, spot-check log) and Phase 1 (validation gate, data dictionary, `known_gaps.json`/`null_baselines.json`) sections, plus `Dataset/README.md`
 - Feature-importance / corridor-specific narrative: derived from Phase 4's per-corridor, per-country feature-importance rankings
 
 ### Related work / prior art (verified via web search, 2026-07-09 — starting point for the literature review, re-verify before submission since this is a fast-moving area)
@@ -732,20 +750,23 @@ Using a novel, openly-published, multi-granularity NLDC dataset (7 years, three 
 
 ### If yes, target venues
 
-- IEEE NPSC (National Power Systems Conference) — India-focused, good fit for an applied/regional contribution
-- *Electric Power Systems Research* (Elsevier) — broader journal, viable if Era 2/3 results are strong
+- **IEEE NPSC (National Power Systems Conference) — still the top recommendation.** India-focused, applied/regional venue, the right level for a strong-dataset-plus-honestly-mixed-modelling contribution. Doesn't need the violation classifier to be a headline result to be a good fit here.
+- **Consider a separate dataset/resource-track submission (new, 2026-07-11 suggestion)** — if NPSC or an adjacent venue/workshop has a dataset track, or as an arXiv companion, splitting the dataset contribution out from the modelling results decouples the two: the dataset stands on its own regardless of how the paper's classifier results are received, and a resource paper has a different (often lower) novelty bar than a full research contribution.
+- *Electric Power Systems Research* (Elsevier) — broader journal, viable if the season-controlled Era 3 findings and the ramp-shock classifier carry the paper (they're strong enough to)
 - IEEE Transactions on Power Systems — higher bar; only pursue if results substantially exceed baseline expectations, since the underlying techniques (LightGBM, SHAP-style feature importance) are not themselves novel
 
-### Paper structure (draft)
+### Paper structure (rewritten 2026-07-11 to lead with the strongest material, not the weakest)
 
-1. Introduction: why Indian grid forecasting matters (RE integration, frequency instability); state the central research question; motivate with Era 1's `study1_hourly` ramp-shock evidence (2019–2022 trend vs. rising RES share) and explicitly position relative to the EAC-PM finding (complements it with granular ML evidence, doesn't claim to discover the phenomenon)
-2. Dataset: novel contribution — NLDC PSP reports scraped 2019–present, three complementary resolutions, methodology, gaps, verified corridor/cross-border onset dates
-3. Era 2: daily-resolution corridor/cross-border-vs-stress correlation (2023–Oct 2024) — first quantitative pass before live modelling
-4. Era 3: live corridor-aware, forecast-residual-informed, lead-time frequency-violation + ramp-shock classifier — features, models, results, real-time applicability
-5. Discussion: which corridors / which cross-border partners are most predictive; how Era 1→2→3 evidence connects; comparison against the related work above
-6. Conclusion + future work (e.g. state-level study, sequence models over the 96-slot window)
+1. **Introduction:** why Indian grid forecasting matters (RE integration, frequency instability); central research question; explicitly position relative to the EAC-PM finding (complements it with granular, season-controlled ML evidence, doesn't claim to discover the phenomenon)
+2. **Dataset:** novel contribution — NLDC PSP reports scraped 2019–present, three complementary resolutions, verification methodology (spot-checks, adversarial audits, machine-readable gap/null-drift tracking) presented as evidence of quality, gaps documented transparently rather than hidden
+3. **Era 1:** `study1_hourly` ramp-shock evidence (2019–2022) vs. rising RES share — motivating, not a headline result
+4. **Era 2:** daily-resolution corridor/cross-border-vs-stress correlation (2023–Oct 2024) — corridor flow as a stress-*relief* signal (physically grounded, not just a correlation number), cross-border shows no daily-resolution signal (an honest null result worth stating plainly, since it's the first quantitative check against the existing qualitative literature)
+5. **Era 3, part A (the strongest section):** the season-controlled RES-share finding (lead with this — the pooled analysis was actively misleading and the season-controlled one flips the sign, a genuine methodological point) and the day-of-week decoupling finding
+6. **Era 3, part B:** the two lead-time classifiers — ramp-shock (strong, PR-AUC 0.72) and frequency-violation (real but modest, PR-AUC 0.09) — presented together specifically *because* the gap between them is informative (mechanically direct vs. reserve-margin-mediated phenomena), not as two disconnected baselines. One paragraph on the `scale_pos_weight` debugging story as a rigor note, not a centerpiece.
+7. **Discussion:** synthesize across eras; what the RES-share, corridor, and day-of-week findings mean together; comparison against the related work below
+8. **Conclusion + future work:** the falsified two-stage-ramp hypothesis (worth a sentence — shows the project tests its own assumptions, not just reports whatever worked), the 2-vs-4-slot lead-window trade-off as an open deployment decision, state-level extension via `study3_states.csv`, sequence models over the 96-slot window
 
-Dataset itself (NLDC PSP scraped + parsed, 7 years, three-resolution) is a secondary publishable contribution regardless of model results.
+Dataset itself (NLDC PSP scraped + parsed, 7 years, three-resolution) is a secondary publishable contribution regardless of model results — strong enough to be worth a resource-track submission on its own if the full paper doesn't land at the first venue tried.
 
 ### Environment
 
