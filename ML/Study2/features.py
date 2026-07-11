@@ -235,15 +235,31 @@ CORRIDOR_COLS = [c for c in [
     "xb_net_bhutan_mu", "xb_net_nepal_mu", "xb_net_bangladesh_mu", "xb_net_myanmar_mu",
 ]]
 
-FEATURE_COLS = (
-    ["freq_hz_lag1", "freq_hz_lag2", "freq_hz_lag3",
-     "demand_met_mw_lag1", "demand_met_mw_lag2", "demand_met_mw_lag3",
-     "freq_hz_roll8_std", "demand_delta_roll8_std", "demand_delta_mw",
-     "solar_delta_mw", "solar_roll8_std",
-     "hour", "dow", "month", "is_weekend", "is_solar_hr",
-     "share_res_pct", "net_trans_exchange_mw", "study1_residual_mw"]
-    + CORRIDOR_COLS
-)
+# Kept as a named constant (used directly by 01_eda.ipynb's correlation analysis) even
+# though it's excluded from FEATURE_COLS below -- see that exclusion's comment.
+DAILY_BROADCAST_COLS = ["share_res_pct"] + CORRIDOR_COLS
+
+FEATURE_COLS = [
+    "freq_hz_lag1", "freq_hz_lag2", "freq_hz_lag3",
+    "demand_met_mw_lag1", "demand_met_mw_lag2", "demand_met_mw_lag3",
+    "freq_hz_roll8_std", "demand_delta_roll8_std", "demand_delta_mw",
+    "solar_delta_mw", "solar_roll8_std",
+    "hour", "dow", "month", "is_weekend", "is_solar_hr",
+    "net_trans_exchange_mw", "study1_residual_mw",
+]
+# share_res_pct and CORRIDOR_COLS deliberately excluded, found 2026-07-11: both are
+# whole-DAY aggregates broadcast identically to all 96 slots of that day (verified --
+# every row of a given date has the exact same share_res_pct/ir_*/xb_* value, unlike
+# freq_hz/demand_met_mw which genuinely vary per slot). That raised a real question --
+# does a whole-day RES-share/corridor figure leak information from LATER in the same
+# day into an earlier slot's prediction? Tested directly rather than assumed either way:
+# removing these columns from the feature set IMPROVED both classifiers on every metric
+# (violation_lead PR-AUC 0.0937 -> 0.1186, +27%; ramp_lead PR-AUC 0.7248 -> 0.7446) --
+# so there was no leakage-driven inflation to worry about, and in fact these columns
+# were adding noise rather than signal once genuine per-slot features are available.
+# Not deleted from the codebase -- CORRIDOR_COLS is still the right tool for descriptive
+# correlation work (01_eda.ipynb's corridor-flow-quintile analysis), just not for this
+# feature set.
 
 
 def scale_pos_weight(y: pd.Series) -> float:

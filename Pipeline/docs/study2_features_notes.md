@@ -9,7 +9,7 @@
 
 ## In plain English
 
-Study 2 tries to answer, for every 15-minute slot of the day: "in the next 15-60 minutes, is the grid about to have a problem?" — either a frequency violation (the grid's electrical frequency drifting outside its safe band) or a ramp-shock (demand suddenly jumping or dropping sharply). This file turns the raw slot-by-slot SCADA data into the inputs a model needs to answer that: what just happened in the last few slots, what time of day/year it is, how much power is flowing between regions and across borders, and — as a bonus signal — how far off Study 1's demand forecast was that day (a forecast being unusually wrong is itself a warning sign).
+Study 2 tries to answer, for every 15-minute slot of the day: "in the next 15-60 minutes, is the grid about to have a problem?" — either a frequency violation (the grid's electrical frequency drifting outside its safe band) or a ramp-shock (demand suddenly jumping or dropping sharply). This file turns the raw slot-by-slot SCADA data into the inputs a model needs to answer that: what just happened in the last few slots, how volatile recent solar generation has been, what time of day/year it is, and — as a bonus signal — how far off Study 1's demand forecast was that day (a forecast being unusually wrong is itself a warning sign). Corridor/cross-border flow and same-day RES share are computed here too, but as of 2026-07-11 are deliberately excluded from what the classifiers actually train on — see `DAILY_BROADCAST_COLS` below.
 
 ---
 
@@ -20,13 +20,21 @@ Study 2 tries to answer, for every 15-minute slot of the day: "in the next 15-60
 
 Both are "OR over the lookahead window" labels, not "will it happen in exactly slot N" — this matches how an early-warning system would actually be used (any warning in the next hour is actionable), and it's why their positive rate (violation_lead ≈2.4%, ramp_lead ≈15%) is higher than the raw per-slot event rate (0.89% / 6.1%) reported in `01_eda.ipynb`.
 
-`add_violation_label()` and `build_feature_table()` both take a `lead_slots` / `violation_lead_slots` override (default 4, matching `LEAD_SLOTS`) — added 2026-07-11 so `03_violation_baseline.ipynb` could test shorter lead windows without disturbing the shipped default or the ramp-shock target. See that notebook's appendix for the result (re-verified after the `scale_pos_weight` fix below): 2 slots now has both the highest PR-AUC and best-F1 of the four windows tested, though 4 remains the shipped default pending an explicit product decision on whether to change it.
+`add_violation_label()` and `build_feature_table()` both take a `lead_slots` / `violation_lead_slots` override (default 4, matching `LEAD_SLOTS`) — added 2026-07-11 so `03_violation_baseline.ipynb` could test shorter lead windows without disturbing the shipped default or the ramp-shock target. Re-run three times now, on three different feature sets, and the "best" window has moved every time (see that notebook's appendix for the full detail) — the instability itself is the finding; 4 remains the shipped default because no window has been shown *robustly* best, not because it's been confirmed as such.
 
 ---
 
 ## Solar-volatility features — added 2026-07-11
 
 `solar_delta_mw` (slot-to-slot change in `solar_mw`) and `solar_roll8_std` (rolling std over the last 8 slots) were added to `add_slot_lag_features()` after the originally-planned two-stage ramp→violation idea was tested and falsified: `P(ramp_lead=1 | violation_lead=1)` = 14.2%, actually *below* the 15.1% unconditional rate, so a demand-side ramp does not meaningfully precede a violation in this data. Scanning every generation source's slot-to-slot delta for correlation with `violation_lead` instead found solar clearly ahead of the rest (corr 0.0785 vs. wind's 0.036, demand's ~0) — consistent with violations clustering at 08:00-09:00 and 13:00 (`01_eda.ipynb`), prime solar-ramp hours. Both features use the same contiguity guard as everything else in this file.
+
+---
+
+## `DAILY_BROADCAST_COLS` — corridor/RES-share removed from the classifiers, 2026-07-11
+
+`share_res_pct` and all 11 `ir_*`/`xb_*` corridor columns turned out to be whole-DAY aggregates, broadcast identically to every one of a day's 96 slots (verified directly: every row of a given date has the exact same value for these columns, unlike `freq_hz`/`demand_met_mw` which genuinely vary per slot). That raised a real methodological question: does a whole-day RES-share/corridor figure leak information from *later* in the same day into a prediction for an *earlier* slot?
+
+Tested rather than assumed. Retraining both classifiers with these 12 columns excluded **improved** both — `violation_lead` PR-AUC 0.0937 → 0.1186, `ramp_lead` PR-AUC 0.7248 → 0.7446. So there was no leakage-driven inflation to worry about; these columns were adding noise, not signal, once genuine per-slot features (frequency/demand lags, solar volatility, hour) are available. `FEATURE_COLS` no longer includes them. `CORRIDOR_COLS` and the new `DAILY_BROADCAST_COLS` (= `["share_res_pct"] + CORRIDOR_COLS`) are still defined and still used directly by `01_eda.ipynb`'s corridor-flow-quintile analysis and `00_era2_daily_correlation.ipynb` — that daily-resolution correlation work is a separate, valid analysis unaffected by this classifier-level result.
 
 ---
 
