@@ -10,10 +10,12 @@ Covers the Indian national grid from 2018 onward across four complementary datas
 
 | File | Rows | Cols | Period | Granularity |
 |------|------|------|--------|-------------|
-| `study1_daily.csv` | 2,678 | 144 | Dec 2018 → present | 1 row per day |
+| `study1_daily.csv` | 2,680 | 144 | Dec 2018 → present | 1 row per day |
 | `study1_hourly.csv` | 46,728 | 151 | Jan 2019 → Apr 2024 | 1 row per hour |
-| `study2_scada.csv` | 56,892 | 164 | Nov 2024 → present | 1 row per 15-min block |
-| `study3_states.csv` | 99,208 | 10 | Dec 2018 → present | 1 row per state/UT/entity per day |
+| `study2_scada.csv` | 57,084 | 164 | Nov 2024 → present | 1 row per 15-min block |
+| `study3_states.csv` | 99,248 | 10 | Dec 2018 → present | 1 row per state/UT/entity per day |
+
+Row counts grow daily via automated updates — treat as a snapshot, not a live figure.
 
 ---
 
@@ -114,23 +116,23 @@ State naming changed over the dataset's history (e.g. J&K's Aug 2019 split into 
 
 ## Known Gaps & Limitations
 
-**study1_daily / study1_hourly — 70 missing dates (all irreducible):**
+**study1_daily / study1_hourly — 69 missing dates (all irreducible, each individually verified against the raw archive):**
 
 | Cause | Count |
 |-------|-------|
-| NLDC published duplicate-date reports (next date gets no coverage) | 57 |
-| File confirmed unavailable from NLDC server (public holidays) | 20 |
-| Edge cases (first date, server downtime) | 3 |
+| NLDC republished an existing date's report under a new filename instead of publishing new content (the date in between got no coverage) | 49 |
+| File confirmed absent from NLDC's server under any filename — a genuine hole in what NLDC published | 16 |
+| Edge cases (server downtime around 2025-05-22/23, 2 confirmed-absent dates found by direct probe) | 4 |
 
-Missing dates are concentrated in 2020 (COVID-era publishing irregularities). These are source-level absences — not parse failures. Recommend forward-fill or time-series-aware imputation.
+Missing dates are concentrated in 2020 (COVID-era publishing irregularities). These are source-level absences, not parse failures — every one has a named, individually-verified reason (not an assumed category); see the project repo's `Pipeline/known_gaps.json` for the full per-date list. Recommend forward-fill or time-series-aware imputation.
 
-**study2_scada — slot irregularities:**
+**study2_scada — slot irregularities and missing dates:**
 
-A small number of days have 95 or 98 slots instead of 96 (DST / file-truncation edge cases). One day (2025-10-02) has 63 slots and should be dropped before training.
+A small number of days have 95, 97, or 98 slots instead of 96 (DST / file-truncation edge cases) — usable, not dropped. Three days are severely corrupted and should be dropped before training: 2025-10-02 (63 slots) plus 2024-11-20 and 2025-04-01 (1 slot each). Separately, **17 calendar dates have no rows at all**: 2 are the same server-downtime gap as above, 13 have only a PDF source published for that date (a PDF can't contain the 15-min `TimeSeries` sheet SCADA data comes from), and 2 (2025-07-15, 2025-08-20) have an XLS file whose `TimeSeries` sheet is present but contains zero data rows. All genuine source-side gaps, not parser bugs.
 
 **IR-Line and CrossBorder columns** are `NaN` before ~2023 — these sections were not published in earlier reports.
 
-**study3_states — one missing date:** 2019-05-10 has no rows because that day's source PDF was published entirely in Hindi/Devanagari (the only report in the archive rendered this way), and the state-section parser's header match is English-only. `study1_daily`/`study1_hourly` are unaffected — their parsers don't depend on that same text match.
+**study3_states — one missing date:** 2019-05-09 (not 2019-05-10 as earlier documented — corrected after checking the source PDF's own subject line) has no rows because that day's source PDF was published entirely in Hindi/Devanagari (the only report in the archive rendered this way), and the state-section parser's header match is English-only. `study1_daily`/`study1_hourly` are unaffected — their parsers don't depend on that same text match.
 
 ---
 
