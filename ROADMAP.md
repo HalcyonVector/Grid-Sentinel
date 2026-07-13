@@ -1,6 +1,8 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-11 (late night) — pushed back on three things I'd reported too passively, and did the actual work instead of explaining it: (1) all 69 `study1_daily` gap dates now individually root-caused (was 4 of 69) by re-parsing the full raw archive directly (835 files) — 49 confirmed duplicate NLDC republishes, 16 confirmed genuine archive gaps, every date backed by named evidence in `known_gaps.json`, not a generic placeholder; (2) confirmed `validate.py`'s current state plainly: 38 PASS / 4 WARN / 1 FAIL right now, zero unresolved bugs in the checker itself, the one FAIL is it correctly doing its job; (3) added the two remaining high-correlation features from the earlier diagnostic scan (`freq_hz_delta`, `wind_delta_mw`) that were found but never acted on — real, verified gain: violation PR-AUC 0.1186 → **0.1567** (+32%), ramp-shock 0.7446 → **0.7486**. The lead-window experiment, re-run a fourth time on this feature set, produced its first cleanly monotonic result (1 slot now wins on every metric, not just some) — see Phase 4. All notebooks, `features.py`, `predict.py`, and `known_gaps.json` updated and re-verified._
+_Last updated: 2026-07-11 (past midnight) — while actually walking Sagnik through the Colab setup, two real things turned up: (1) a genuine security concern (a real Kaggle key almost got typed into a notebook cell headed for the public repo) — resolved by switching to Colab's Secrets manager instead of hardcoded credentials, documented in "ML Development Environment"; (2) built `study1_run_all.ipynb` / `study2_run_all.ipynb`, one-file-per-study convenience notebooks that concatenate each study's stages so a collaborator can open and run just one file — and while assembling Study 1's, found a real bug in `04_era1_ramp_characterization.ipynb` (wrong datetime format, would have crashed if actually run against live data, apparently never re-confirmed since Phase 3). Fixed and re-verified end to end._
+
+_Previous update, 2026-07-11 (late night): pushed back on three things reported too passively, and did the actual work instead of explaining it: (1) all 69 `study1_daily` gap dates now individually root-caused (was 4 of 69) by re-parsing the full raw archive directly (835 files) — 49 confirmed duplicate NLDC republishes, 16 confirmed genuine archive gaps, every date backed by named evidence in `known_gaps.json`, not a generic placeholder; (2) confirmed `validate.py`'s current state plainly: 38 PASS / 4 WARN / 1 FAIL, zero unresolved bugs in the checker itself; (3) added `freq_hz_delta`/`wind_delta_mw` — real, verified gain: violation PR-AUC 0.1186 → 0.1567 (+32%), ramp-shock 0.7446 → 0.7486._
 
 _Previous update, 2026-07-11 (night): did a real confidence audit of Phase 4 rather than just re-reading the docs. Found that `share_res_pct` and all 11 `ir_*`/`xb_*` corridor columns are whole-DAY aggregates broadcast identically to every 15-min slot of that day, raising a leakage question — tested rather than assumed, and removing them **improved both targets** (violation PR-AUC 0.0937 → 0.1186, ramp-shock 0.7248 → 0.7446), so there was no leakage inflation, just noise being removed._
 
@@ -54,13 +56,15 @@ Grid-Sentinel/
 │   ├── Study1/
 │   │   ├── features.py         Shared feature engineering, imported by notebooks + predict.py
 │   │   ├── predict.py           Daily next-day demand forecast, wired into CI
-│   │   └── notebooks/          01_eda, 02_features, 03_baseline, 04_era1_ramp_characterization
+│   │   └── notebooks/          01_eda, 02_features, 03_baseline, 04_era1_ramp_characterization,
+│   │                          study1_run_all (all 4 stages combined, one file to open/run/share)
 │   └── Study2/
 │       ├── features.py         Shared feature engineering (labels, lag/rolling slot features,
 │       │                       Study1 residual backtest), imported by notebooks + predict.py
 │       ├── predict.py           Daily 96-slot violation/ramp-shock risk timeline, wired into CI
 │       └── notebooks/          00_era2_daily_correlation, 01_eda, 02_features,
-│                               03_violation_baseline, 04_ramp_shock_baseline
+│                               03_violation_baseline, 04_ramp_shock_baseline,
+│                               study2_run_all (all 5 stages combined, one file to open/run/share)
 ├── Pipeline/           Build, validate, and data-dictionary scripts
 │   ├── build_all.py        Full rebuild of all four datasets
 │   ├── validate.py         Post-build integrity checks
@@ -365,6 +369,19 @@ GitHub repo (ML/ folder)
 **Study 2 has one new requirement Study 1 doesn't:** `ML/Study2/features.py`'s `build_study1_residual_signal()` loads `ML/Study1/features.py` directly off disk (via `importlib`, resolved relative to Study 2's own file location — see `study2_features_notes.md`), so **the full repo must be cloned**, not just the `ML/Study2/` folder on its own — downloading a single folder or uploading just `features.py` to a Colab session will fail with a `FileNotFoundError` looking for `ML/Study1/features.py`. `!git clone` (as above) already satisfies this; it's only a problem if someone tries to shortcut the setup.
 
 **Verified 2026-07-11:** all 5 `ML/Study2` notebooks were fixed (removed a leftover `sys.path.insert(0, "..")` that assumed a different, inconsistent working directory than the `data/...` paths in the same cells — a real bug that would have broken for whoever actually tried running them in Colab) and re-executed end to end with the working directory set to `ML/Study2/` and a real `data/study2_scada.csv` in place (simulating exactly what the Kaggle download step produces) — all numbers matched exactly. This session's actual work was done locally against the cloned repo's `Dataset/` folder directly, not in Colab (no Colab/Google access in this environment) — chosen for fast iteration and direct verification against live data, but every notebook was engineered and tested to match the Colab-ready convention above, not the local shortcut used to verify it.
+
+**Credentials — use Colab Secrets, not a hardcoded key, 2026-07-11.** The original `01_eda.ipynb` header had `os.environ["KAGGLE_KEY"] = "enter your kaggle api token..."` as a placeholder meant to be filled in and run interactively, never committed back with a real value in it. That's a real risk given this repo is public — a real key typed into that line and then committed (or "Save a copy in GitHub"-ed) would be visible to anyone and would stay in git history even after being removed later. Use Colab's **Secrets** manager instead (key icon in the left sidebar): add `KAGGLE_USERNAME` and `KAGGLE_KEY` there once (toggle "Notebook access" on), then in any cell:
+```python
+import os
+from google.colab import userdata
+os.environ["KAGGLE_USERNAME"] = userdata.get("KAGGLE_USERNAME")
+os.environ["KAGGLE_KEY"] = userdata.get("KAGGLE_KEY")
+```
+No secret value ever appears in a cell that gets saved or committed. `01_eda.ipynb`'s own placeholder lines were left as-is (they're what the notebook's original author wrote, still only a placeholder, not a live risk on their own) — the two new `*_run_all.ipynb` notebooks below use the Secrets pattern from the start.
+
+**One-file-per-study convenience notebooks, added 2026-07-11** (Sagnik asked for a way to open one file instead of hunting through 4-5 separate ones per study, since each Colab "Open from GitHub" spawns its own fresh runtime): `ML/Study1/notebooks/study1_run_all.ipynb` and `ML/Study2/notebooks/study2_run_all.ipynb` concatenate each study's notebooks in their documented run order, with one shared Secrets-based setup cell at the top (clone, cd, pip install, credentials, Kaggle download). The original per-stage notebooks are **not replaced** — they're still the source of truth for each individual stage; these are wrappers for convenience and for sharing a single runnable file with a collaborator. Verified end to end locally (all cells, in sequence, against real data) before committing.
+
+**Real bug found while building the Study 1 combined notebook:** `04_era1_ramp_characterization.ipynb` parsed `study1_hourly.csv`'s `datetime` column with `format="%d-%m-%Y %H:%M"` — the actual data is ISO format (`%Y-%m-%d %H:%M:%S`), confirmed directly against the live file. This would have crashed the notebook if anyone actually ran it against current data, despite this notebook being reported as already run and verified during Phase 3 (its Era 1 correlation results were reported as real numbers) — never re-confirmed since then, apparently. Fixed; re-verified the corrected notebook reproduces essentially the same correlation finding (-0.418/-0.371 vs. the originally reported -0.429/-0.367 — same direction and magnitude, small natural drift, not a discrepancy worth chasing further).
 
 ### Code format
 
