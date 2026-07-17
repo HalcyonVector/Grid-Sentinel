@@ -1,8 +1,11 @@
 import { SectionCard, Badge, Empty } from './ui'
 
-const HIGH_RISK = 0.5
+// Fallback only while featureImportance.thresholds hasn't loaded yet -- real
+// values come from the freshly-retrained classifiers' VAL-selected best-F1
+// threshold (see Pipeline/build_dashboard_data.py), not a guessed constant.
+const FALLBACK_THRESHOLDS = { violation: 0.5, ramp: 0.5 }
 
-function buildAnomalies(forecast, risk) {
+function buildAnomalies(forecast, risk, thresholds) {
   const anomalies = []
 
   forecast.forEach((r) => {
@@ -18,25 +21,47 @@ function buildAnomalies(forecast, risk) {
     }
   })
 
+  // Severity reflects how far the prediction sits above its OWN threshold, not
+  // which type it is. Violation and ramp-shock thresholds are on very different
+  // scales (~10.6% vs ~21.4%), so the fair comparison is the ratio to each
+  // type's own threshold, not the raw probability: 2x the threshold is "critical"
+  // for either type. Without this, an 11% violation (barely over 10.6%) read as
+  // more severe than a 68% ramp-shock (more than 3x over 21.4%), which is
+  // backwards -- severity should track confidence, not just which model fired.
+  const CRITICAL_MULTIPLE = 2
+
   risk.forEach((r) => {
-    if (r.violation_prob !== null && r.violation_prob >= HIGH_RISK) {
-      anomalies.push({ when: `${r.date} ${r.time}`, type: 'Violation risk', severity: 'critical', detail: `Predicted violation probability ${(r.violation_prob * 100).toFixed(0)}%` })
+    if (r.violation_prob !== null && r.violation_prob >= thresholds.violation) {
+      const multiple = r.violation_prob / thresholds.violation
+      anomalies.push({
+        when: `${r.date} ${r.time}`,
+        type: 'Violation risk',
+        severity: multiple >= CRITICAL_MULTIPLE ? 'critical' : 'warning',
+        detail: `Predicted violation probability ${(r.violation_prob * 100).toFixed(0)}% (${multiple.toFixed(1)}x the model's best-F1 threshold, ${(thresholds.violation * 100).toFixed(1)}%)`,
+      })
     }
-    if (r.ramp_prob !== null && r.ramp_prob >= HIGH_RISK) {
-      anomalies.push({ when: `${r.date} ${r.time}`, type: 'Ramp-shock risk', severity: 'warning', detail: `Predicted ramp-shock probability ${(r.ramp_prob * 100).toFixed(0)}%` })
+    if (r.ramp_prob !== null && r.ramp_prob >= thresholds.ramp) {
+      const multiple = r.ramp_prob / thresholds.ramp
+      anomalies.push({
+        when: `${r.date} ${r.time}`,
+        type: 'Ramp-shock risk',
+        severity: multiple >= CRITICAL_MULTIPLE ? 'critical' : 'warning',
+        detail: `Predicted ramp-shock probability ${(r.ramp_prob * 100).toFixed(0)}% (${multiple.toFixed(1)}x the model's best-F1 threshold, ${(thresholds.ramp * 100).toFixed(1)}%)`,
+      })
     }
   })
 
   return anomalies.sort((a, b) => b.when.localeCompare(a.when))
 }
 
-export default function AnomalyLog({ forecast, risk }) {
-  const anomalies = buildAnomalies(forecast, risk)
+export default function AnomalyLog({ forecast, risk, thresholds }) {
+  const effectiveThresholds = thresholds || FALLBACK_THRESHOLDS
+  const anomalies = buildAnomalies(forecast, risk, effectiveThresholds)
 
   return (
     <SectionCard
       title="Anomaly Log"
-      subtitle="Days where the demand forecast missed by a wide margin, or slots where predicted risk was high. Derived from Study 1/2 model output, not a separate detector."
+      subtitle={`Days where the demand forecast missed by a wide margin, or slots where predicted risk crossed each classifier's own VAL-selected best-F1 threshold (violation ≥ ${(effectiveThresholds.violation * 100).toFixed(1)}%, ramp-shock ≥ ${(effectiveThresholds.ramp * 100).toFixed(1)}%), not an arbitrary round number. Severity is "critical" at 2x that threshold or more, "warning" below it, same rule for both risk types, so severity tracks model confidence, not just which classifier fired. Derived from Study 1/2 model output, not a separate detector.`}
       accent="rose"
     >
       {!anomalies.length ? (

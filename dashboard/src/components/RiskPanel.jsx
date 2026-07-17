@@ -1,7 +1,11 @@
+import { useMemo, useState } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { SectionCard, StatCard, StatGrid, Empty, ChartTooltip } from './ui'
 
 export default function RiskPanel({ risk }) {
+  const uniqueDates = useMemo(() => [...new Set(risk.map((r) => r.date))].sort().reverse(), [risk])
+  const [selectedDate, setSelectedDate] = useState(null)
+
   if (!risk.length) {
     return (
       <SectionCard title="Study 2: Today's Risk Timeline" accent="rose">
@@ -12,8 +16,9 @@ export default function RiskPanel({ risk }) {
     )
   }
 
-  const latestDate = risk[risk.length - 1].date
-  const dayRows = risk.filter((r) => r.date === latestDate).sort((a, b) => a.time.localeCompare(b.time))
+  const activeDate = selectedDate && uniqueDates.includes(selectedDate) ? selectedDate : uniqueDates[0]
+  const isLatest = activeDate === uniqueDates[0]
+  const dayRows = risk.filter((r) => r.date === activeDate).sort((a, b) => a.time.localeCompare(b.time))
 
   const violProbs = dayRows.map((r) => r.violation_prob).filter((v) => v !== null)
   const rampProbs = dayRows.map((r) => r.ramp_prob).filter((v) => v !== null)
@@ -28,12 +33,38 @@ export default function RiskPanel({ risk }) {
 
   return (
     <SectionCard
-      title="Study 2: Today's Risk Timeline"
-      subtitle="96-slot (15-min) frequency-violation and ramp-shock risk for the latest complete day. Weak-but-real signal for violation risk, strong for ramp-shock. See ROADMAP.md for honest, out-of-sample PR-AUC numbers."
+      title="Study 2: Risk Timeline"
+      subtitle="96-slot (15-min) frequency-violation and ramp-shock risk. Weak-but-real signal for violation risk, strong for ramp-shock. See ROADMAP.md for honest, out-of-sample PR-AUC numbers."
       accent="rose"
     >
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <label className="text-xs font-medium uppercase tracking-wider text-slate-500" htmlFor="risk-date-select">
+          Day
+        </label>
+        <select
+          id="risk-date-select"
+          value={activeDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-slate-200 outline-none transition focus:border-rose-400/40"
+        >
+          {uniqueDates.map((d) => (
+            <option key={d} value={d} className="bg-[#0d1016]">
+              {d}{d === uniqueDates[0] ? ' (latest)' : ''}
+            </option>
+          ))}
+        </select>
+        {!isLatest && (
+          <button
+            onClick={() => setSelectedDate(null)}
+            className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition hover:border-white/20 hover:text-slate-200"
+          >
+            Jump to latest
+          </button>
+        )}
+      </div>
+
       <StatGrid>
-        <StatCard value={dayRows.length} label="Slots covered" sub={latestDate} />
+        <StatCard value={dayRows.length} label="Slots covered" sub={activeDate} />
         <StatCard
           value={violProbs.length ? (Math.max(...violProbs) * 100).toFixed(1) + '%' : 'N/A'}
           label="Peak violation risk"
@@ -48,7 +79,7 @@ export default function RiskPanel({ risk }) {
         />
         <StatCard
           value={violProbs.length ? ((violProbs.reduce((a, b) => a + b, 0) / violProbs.length) * 100).toFixed(2) + '%' : 'N/A'}
-          label="Avg. violation risk, today"
+          label="Avg. violation risk"
         />
       </StatGrid>
 

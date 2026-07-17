@@ -31,7 +31,13 @@ Output: dashboard/public/data/dashboard.json, containing:
   featureImportance -- real, freshly retrained feature_importances_ for all
                         three models (Study 1 demand baseline, Study 2
                         violation classifier, Study 2 ramp-shock classifier),
-                        same training procedure as the baseline notebooks.
+                        same training procedure as the baseline notebooks,
+                        plus each classifier's VAL-selected best-F1
+                        threshold (same methodology-fix pattern as
+                        03_violation_baseline.ipynb/04_ramp_shock_baseline.ipynb:
+                        selected on VAL, not on the same data being judged).
+  study3Latest      -- study3_states.csv's latest date, per-state demand and
+                        shortage, sorted by demand descending.
 """
 
 import importlib.util
@@ -40,6 +46,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import precision_recall_curve
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATASET_DIR = REPO_ROOT / "Dataset"
@@ -161,6 +168,32 @@ def build_era2_corridor_corr():
 
     out_df = pd.DataFrame(rows).dropna(subset=["corr"])
     return clean_records(out_df)
+
+
+def build_study3_latest():
+    """study3_states.csv is otherwise unused anywhere in the dashboard --
+    it's a full third study (state-level PSP breakdown), published on
+    Kaggle and updated daily by CI, but had zero representation here.
+    Ships just the latest date's per-state snapshot, not full history --
+    99,489 rows of state-level history would be a needless payload for a
+    single "state status" panel; a historical per-state explorer would be
+    a bigger, separate feature."""
+    df = pd.read_csv(DATASET_DIR / "study3_states.csv", parse_dates=["date"])
+    latest_date = df["date"].max()
+    latest = df[df["date"] == latest_date].copy()
+    latest = latest.sort_values("max_demand_met_mw", ascending=False)
+
+    states = clean_records(
+        latest[["region", "state", "max_demand_met_mw", "shortage_max_demand_mw", "energy_shortage_mu"]]
+    )
+    totals = {
+        "date": latest_date.strftime("%Y-%m-%d"),
+        "totalDemand": float(latest["max_demand_met_mw"].sum()),
+        "totalShortage": float(latest["shortage_max_demand_mw"].sum()),
+        "stateCount": int(len(latest)),
+        "statesWithShortage": int((latest["shortage_max_demand_mw"] > 0).sum()),
+    }
+    return {"date": totals["date"], "totals": totals, "states": states}
 
 
 def build_predictions():
@@ -290,15 +323,27 @@ def build_feature_importance(study2_f):
             .sort_values(ascending=False).head(10).reset_index()
         )
         imp.columns = ["feature", "importance"]
-        return imp
 
-    violation_importance = train_classifier("violation_lead")
-    ramp_importance = train_classifier("ramp_lead")
+        # Best-F1 threshold selected on VAL, not on TEST/live data -- same
+        # methodology-fix pattern as 03_violation_baseline.ipynb (2026-07-14):
+        # picking the threshold on the same data it's later applied to is a
+        # hindsight-optimistic leak. This is genuinely out-of-sample.
+        proba_val = model.predict_proba(val[study2_f.FEATURE_COLS])[:, 1]
+        precision_val, recall_val, thresh_val = precision_recall_curve(val[target], proba_val)
+        f1s_val = 2 * precision_val * recall_val / (precision_val + recall_val + 1e-12)
+        best_idx_val = np.nanargmax(f1s_val[:-1])
+        best_threshold = float(thresh_val[best_idx_val])
+
+        return imp, best_threshold
+
+    violation_importance, violation_threshold = train_classifier("violation_lead")
+    ramp_importance, ramp_threshold = train_classifier("ramp_lead")
 
     return {
         "study1Demand": clean_records(study1_importance),
         "study2Violation": clean_records(violation_importance),
         "study2Ramp": clean_records(ramp_importance),
+        "thresholds": {"violation": violation_threshold, "ramp": ramp_threshold},
     }
 
 
@@ -320,6 +365,7 @@ if __name__ == "__main__":
         "solarHourRates": build_solar_hour_rates(era3_df),
         "resShareFindings": build_res_share_findings(era3_df),
         "featureImportance": build_feature_importance(study2_f),
+        "study3Latest": build_study3_latest(),
     }
     with open(OUT_FILE, "w", encoding="utf-8") as fh:
         json.dump(payload, fh)

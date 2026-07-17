@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Hero from './components/Hero'
 import LiveStatus from './components/LiveStatus'
+import StatePanel from './components/StatePanel'
 import ForecastPanel from './components/ForecastPanel'
 import RiskPanel from './components/RiskPanel'
 import HistoricalExplorer from './components/HistoricalExplorer'
@@ -18,6 +19,7 @@ const EMPTY_DATA = {
   solarHourRates: null,
   resShareFindings: null,
   featureImportance: null,
+  study3Latest: null,
 }
 
 function App() {
@@ -55,6 +57,7 @@ function App() {
         )}
 
         <LiveStatus dailySlim={data.dailySlim} />
+        <StatePanel study3Latest={data.study3Latest} />
         <ForecastPanel forecast={data.forecast} />
         <RiskPanel risk={data.risk} />
         <HistoricalExplorer dailySlim={data.dailySlim} era1Monthly={data.era1Monthly} era2CorridorCorr={data.era2CorridorCorr} />
@@ -65,7 +68,7 @@ function App() {
           resShareFindings={data.resShareFindings}
           featureImportance={data.featureImportance}
         />
-        <AnomalyLog forecast={data.forecast} risk={data.risk} />
+        <AnomalyLog forecast={data.forecast} risk={data.risk} thresholds={data.featureImportance?.thresholds} />
 
         <footer className="mt-2 pb-6 text-center text-xs text-slate-600">
           Data and models:{' '}

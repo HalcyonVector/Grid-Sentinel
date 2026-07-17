@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, Brush,
 } from 'recharts'
 import { SectionCard, Empty, ChartTooltip } from './ui'
 import { fmtDateShort, index0to100, shortCorridorName } from '../lib/format'
@@ -20,8 +20,11 @@ function OverviewTab({ dailySlim }) {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-        <div className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">National peak demand met (MW)</div>
-        <div className="h-64">
+        <div className="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-wider text-slate-500">
+          <span>National peak demand met (MW)</span>
+          <span className="normal-case tracking-normal text-slate-600">Drag the strip below to zoom</span>
+        </div>
+        <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={demandData} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
               <defs>
@@ -35,14 +38,25 @@ function OverviewTab({ dailySlim }) {
               <YAxis stroke="rgba(255,255,255,0.3)" tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={(v) => Math.round(v / 1000) + 'k'} width={44} />
               <Tooltip content={<ChartTooltip formatter={(v) => Math.round(v).toLocaleString('en-IN') + ' MW'} />} />
               <Area type="monotone" dataKey="Demand" stroke="#38bdf8" strokeWidth={1.5} fill="url(#demandHistGrad)" dot={false} isAnimationActive={false} />
+              <Brush
+                dataKey="date"
+                height={24}
+                travellerWidth={8}
+                stroke="#38bdf8"
+                fill="rgba(56,189,248,0.05)"
+                tickFormatter={() => ''}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-        <div className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">RES share of generation (%)</div>
-        <div className="h-64">
+        <div className="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-wider text-slate-500">
+          <span>RES share of generation (%)</span>
+          <span className="normal-case tracking-normal text-slate-600">Drag the strip below to zoom</span>
+        </div>
+        <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={resData} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
               <defs>
@@ -56,6 +70,14 @@ function OverviewTab({ dailySlim }) {
               <YAxis stroke="rgba(255,255,255,0.3)" tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={(v) => v + '%'} width={40} />
               <Tooltip content={<ChartTooltip formatter={(v) => v.toFixed(1) + '%'} />} />
               <Area type="monotone" dataKey="RES share" stroke="#fbbf24" strokeWidth={1.5} fill="url(#resHistGrad)" dot={false} isAnimationActive={false} />
+              <Brush
+                dataKey="date"
+                height={24}
+                travellerWidth={8}
+                stroke="#fbbf24"
+                fill="rgba(251,191,36,0.05)"
+                tickFormatter={() => ''}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
