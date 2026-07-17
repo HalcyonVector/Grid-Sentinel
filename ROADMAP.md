@@ -677,73 +677,69 @@ Same as Phase 3 — Google Colab, `ML/environment.yml`, dataset via Kaggle API. 
 
 ---
 
-## Phase 5 — Dashboard 🔲
+## Phase 5 — Dashboard ✅ (built 2026-07-17, not yet deployed)
 
-**Vision:** public GitHub Pages site combining live data feed + model inference + historical explorer.
+**Vision:** public site combining live data feed + model inference + historical explorer. Built in `dashboard/` as a React + Vite + Tailwind + Recharts app (not GitHub Pages/plain-JS as originally scoped below — Sagnik asked for a Vercel-deployable app matching the stack/visual design of another of his projects, [HalcyonVector/Utility-Based-Portfolio-Allocation-Agent](https://github.com/HalcyonVector/Utility-Based-Portfolio-Allocation-Agent): dark glass-card sections, radial-gradient hero, hover-lift micro-interactions. Grid-Sentinel uses its own sky-blue/amber "energy" accent rather than that project's rose, but the structural language matches).
 
 ### The Historical Explorer mirrors the three-era research design (2026-07-09)
 
 Rather than one undifferentiated set of time-series charts, the Historical Explorer is structured around the same three eras used in Phases 3/4/6 — each tab uses the dataset that actually covers it, and each is a real analytical output from those phases, not raw unprocessed charting:
 
-- **Era 1 tab (2019–2022, non-live):** intra-day ramp magnitude/frequency trend vs. rising `share_res_pct`, from Phase 3's `04_era1_ramp_characterization.ipynb`. Source: `study1_hourly.csv`. Framed explicitly as motivating evidence for the live Phase 4 classifier, not a prediction of its own.
+- **Era 1 tab (2019–2022, non-live):** intra-day ramp magnitude/frequency trend vs. rising `share_res_pct`, from Phase 3's `04_era1_ramp_characterization.ipynb`. Source: `study1_hourly.csv` (36MB) at data-prep time; the browser only ever sees the precomputed monthly aggregate — see "The client-fetch size problem" below. Framed explicitly as motivating evidence for the live Phase 4 classifier, not a prediction of its own.
 - **Era 2 tab (2023–Oct 2024, non-live):** daily-resolution corridor/cross-border-vs-stress correlation, from Phase 4's `00_era2_daily_correlation.ipynb`. Source: `study1_daily.csv`.
-- **Era 3 (live, this is the "Study 2 risk" panel below, not a Historical Explorer tab):** today's live corridor-aware risk timeline. Source: `study2_scada.csv`.
+- **Era 3 (live, this is the "Study 2 risk" panel below, not a Historical Explorer tab):** today's live corridor-aware risk timeline. Source: `Dataset/predictions/study2_risk.csv` (the daily model output, not the raw 60MB `study2_scada.csv`).
 
 This means all three CSVs appear in the dashboard for the era each one actually covers — `study1_hourly` and the Era 2 daily subset are never presented as live or current, only as historical, clearly dated evidence.
 
-### Panels
+### Panels (as actually built)
 
-| Panel | Description | Data source |
-|-------|-------------|-------------|
-| **Live grid status** | Today's key metrics (peak demand, generation mix, frequency stats) as they arrive | `study1_daily.csv` latest row |
-| **Study 1 forecast** | Next-day demand forecast (national + regional) with confidence interval | Study 1 model output |
-| **Study 2 risk** | Today's 96-slot corridor-aware frequency-violation + ramp-shock risk timeline (Era 3, live) | Study 2 model output on today's SCADA |
-| **Historical explorer** | Interactive time-series charts: demand trends, generation mix, IR-line flows, cross-border exchange | Full `study1_daily.csv` |
-| ↳ *Era 1: Ramp-shock history* (tab) | Intra-day ramp trend 2019–2022 vs. rising RES share — motivating evidence, non-live | `study1_hourly.csv` |
-| ↳ *Era 2: Corridor-stress correlation* (tab) | Daily-resolution corridor/cross-border vs. frequency-stress correlation, 2023–Oct 2024, non-live | `study1_daily.csv` (2023+ subset) |
-| **Anomaly log** | Days where actual demand deviated >X% from forecast, or violation/ramp-shock rate was elevated | Derived |
+| Panel | Description | Data source | Notes vs. original scope |
+|-------|-------------|-------------|---------------------------|
+| **Live grid status** | Latest day's peak demand, RES share, frequency-band stability, generation-mix bar | `dailySlim` (latest row) | As scoped. |
+| **Study 1 forecast** | Predicted-vs-actual demand chart + latest error + running MAPE | `forecast` | National only, no regional breakdown; no explicit confidence-interval band (only 6 logged predictions so far — a CI would be nearly meaningless on this little history; revisit once the log has more rows). |
+| **Study 2 risk** | Today's 96-slot violation/ramp-shock risk timeline | `risk` | As scoped. |
+| **Historical explorer** | Demand + RES-share trend, full 2019–present | `dailySlim` | Simplified to demand + RES share (the two series the rest of the project's findings hang on); IR-line/cross-border flows as raw time series were dropped in favor of the Era 2 correlation view below, which is the actual verified finding — a raw flow chart would just be more lines with no established interpretation. |
+| ↳ *Era 1 tab* | Ramp magnitude vs. RES share, indexed 0–100, single axis | `era1Monthly` (precomputed) | As scoped, matches `04_era1_ramp_characterization.ipynb` exactly. |
+| ↳ *Era 2 tab* | Corridor/cross-border flow vs. frequency-stress correlation, diverging bars | `era2CorridorCorr` (precomputed) | As scoped, matches `00_era2_daily_correlation.ipynb` exactly. |
+| **Anomaly log** | Forecast misses ≥5% error, risk slots ≥50% probability | Derived client-side from `forecast` + `risk` | As scoped. |
 
 ### What already exists
 
-`ML/Study1/predict.py` — built and wired into CI 2026-07-10 (see Phase 3 and `Pipeline/docs/study1_predict_notes.md`). Outputs `Dataset/predictions/study1_forecast.csv` daily. `ML/Study2/predict.py` — built and wired into CI 2026-07-11 (see Phase 4 and `Pipeline/docs/study2_predict_notes.md`). Outputs `Dataset/predictions/study2_risk.csv` daily, a full 96-slot violation/ramp-shock risk timeline for the latest complete day. No dashboard frontend yet — both prediction outputs exist and are ready to be consumed once Phase 5 starts.
+`ML/Study1/predict.py` and `ML/Study2/predict.py` — both built, wired into CI, output `Dataset/predictions/study1_forecast.csv` and `study2_risk.csv` daily (see Phase 3/4). `dashboard/` — full React app, all 6 panels built, tested locally (dev server + production build both verified), not yet deployed publicly.
 
-### What needs to be built
+### The client-fetch size problem, and how it's solved
 
-- A static frontend (plain HTML/JS + a charting library) that reads the committed CSVs/JSON directly — no backend, no API server. Nothing else is blocked — both `study1_forecast.csv` and `study2_risk.csv` already exist and update daily.
-- Wiring the frontend to actually read `Dataset/predictions/study1_forecast.csv` and `Dataset/predictions/study2_risk.csv` (neither needs further backend work, just a frontend that consumes what already exists)
+The original plan ("frontend reads the committed CSVs/JSON directly") undersold one real constraint: `study1_hourly.csv` is 36MB and `study2_scada.csv` is 60MB. Fetching either client-side on every page load — just to show a monthly aggregate or one day's slots — would be a genuinely broken product on a static host with no backend to pre-aggregate. `Pipeline/build_dashboard_data.py` (new, 2026-07-17) solves this: it precomputes everything the frontend actually needs — a slim ~15-column version of `study1_daily.csv` (144 cols → 15, ~2.1MB → a few hundred KB), the same monthly Era 1 aggregation `04_era1_ramp_characterization.ipynb` produces, and the same Era 2 correlation table `00_era2_daily_correlation.ipynb` produces — into one `dashboard/public/data/dashboard.json` (~1MB total, verified byte-for-byte against the already-confirmed notebook numbers). The browser never touches the 36MB/60MB files.
 
-### Where the data/code will live
+### Where the data/code lives
 
-- Inference scripts: `ML/Study1/predict.py` (done), `ML/Study2/predict.py` (done)
-- Predictions output: `Dataset/predictions/study1_forecast.csv` (done, CSV not JSON — simpler to append to with pandas, matches every other output in this repo), `Dataset/predictions/study2_risk.csv` (done, same convention)
-- Frontend: new top-level `docs/` or `dashboard/` folder, served via GitHub Pages
-- CI: `.github/workflows/daily_scrape.yml` already runs both `ML/Study1/predict.py` and `ML/Study2/predict.py` as steps
+- Inference scripts: `ML/Study1/predict.py`, `ML/Study2/predict.py` (both done)
+- Predictions output: `Dataset/predictions/study1_forecast.csv`, `Dataset/predictions/study2_risk.csv` (both done)
+- Dashboard data prep: `Pipeline/build_dashboard_data.py` → `dashboard/public/data/dashboard.json` (new)
+- Frontend: `dashboard/` (React + Vite + Tailwind + Recharts, see `dashboard/README.md`)
+- CI: `.github/workflows/daily_scrape.yml` runs `ML/Study1/predict.py`, `ML/Study2/predict.py`, then `Pipeline/build_dashboard_data.py`, then commits all outputs together
 
 ### Step by step
 
 1. ~~Once Phase 3's baseline model is trained, write `ML/Study1/predict.py`~~ **Done 2026-07-10.**
 2. ~~Once Phase 4's baseline model is trained, write `ML/Study2/predict.py`~~ **Done 2026-07-11.**
-3. Build the static dashboard: start with the Historical Explorer panel (needs no model, can be built now) and both the Study 1 forecast panel and Study 2 risk panel — data already exists for all three as of 2026-07-11.
-4. Deploy via GitHub Pages, pointed at the new frontend folder.
+3. ~~Build the dashboard~~ **Done 2026-07-17** — all 6 panels, tested locally.
+4. **Deploy to Vercel — not yet done.** Needs Sagnik to import the repo on Vercel with Root Directory set to `dashboard` (see `dashboard/README.md` for exact steps); no code changes required, this is an account-level action nobody but Sagnik can do.
 
-### Technical stack
+### Technical stack (as built)
 
-- Static site on GitHub Pages (free hosting, no server)
-- Python model inference runs in GitHub Actions each day → outputs CSV predictions committed to repo (both `predict.py` scripts already do this, see above)
-- Frontend: lightweight JS (Plotly.js or Observable Plot) reading the committed CSVs
-- No backend required — all data is in the repo
-
-### Environment
-
-Frontend needs no build environment (plain HTML/JS, or a minimal static-site setup — decide framework, if any, when this phase starts). Inference scripts reuse `ML/environment.yml`, though the GitHub Actions job may want a slimmer inference-only requirements file to keep CI fast (training-only deps like `jupyterlab` aren't needed at inference time).
+- **React 19 + Vite + Tailwind CSS + Recharts** — matches the stack of [HalcyonVector/Utility-Based-Portfolio-Allocation-Agent](https://github.com/HalcyonVector/Utility-Based-Portfolio-Allocation-Agent), per explicit request to keep this project's dashboards consistent.
+- Deploy target: **Vercel**, not GitHub Pages (changed from the original plan below — Sagnik wants Vercel).
+- Python model inference runs in GitHub Actions each day → outputs CSV predictions + `dashboard.json` committed to repo.
+- No backend — Vercel serves the static Vite build; all data is baked into the repo at CI time, not fetched from a live API.
 
 ### Milestones
 
-1. Historical Explorer panel live (no model dependency — can start anytime)
-2. ~~Phase 3 model done → export daily forecast JSON from GitHub Actions~~ ✅ Done 2026-07-10 (CSV, not JSON — see "Where the data/code will live" above)
-3. ~~Phase 4 model done → export slot-level risk JSON~~ ✅ Done 2026-07-11 (same CSV convention)
-4. Full dashboard consuming both + raw CSVs
-5. Launch publicly on GitHub Pages
+1. ~~Historical Explorer panel live~~ **Done 2026-07-17.**
+2. ~~Phase 3 model done → export daily forecast~~ ✅ Done 2026-07-10.
+3. ~~Phase 4 model done → export slot-level risk~~ ✅ Done 2026-07-11.
+4. ~~Full dashboard consuming both + raw data~~ **Done 2026-07-17.**
+5. **Launch publicly on Vercel — pending, needs Sagnik's Vercel account.**
 
 ---
 

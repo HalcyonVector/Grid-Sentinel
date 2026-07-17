@@ -96,6 +96,19 @@ jobs:
         # actual data from committing.
         continue-on-error: true
 
+      # ── 5c. Rebuild dashboard data ───────────────────────────────────────
+      # Precomputes the slim JSON the Phase 5 dashboard (dashboard/) fetches --
+      # study1_hourly.csv (36MB) and study2_scada.csv (60MB) are far too large
+      # to ship to the browser, so this aggregates what each panel actually
+      # needs into dashboard/public/data/dashboard.json. See
+      # Pipeline/build_dashboard_data.py's docstring for the full breakdown.
+      - name: Build dashboard data
+        if: steps.outcome.outputs.changed == 'true'
+        run: python Pipeline/build_dashboard_data.py
+        # Same reasoning as the two predict.py steps: a dashboard-data failure
+        # must never block the day's actual data from committing.
+        continue-on-error: true
+
       # ── 6. Commit raw file + updated CSVs + forecast log ──────────────────
       - name: Commit and push
         if: steps.outcome.outputs.changed == 'true'
@@ -104,7 +117,8 @@ jobs:
           git config user.email "dedu[bot]@users.noreply.github.com"
           git add Dataset/study1_daily.csv Dataset/study2_scada.csv Dataset/study3_states.csv \
                   Dataset/predictions/study1_forecast.csv Dataset/predictions/study2_risk.csv \
-                  Dataset/Raw/File2_Raw/ Dataset/Raw/File3_Raw/
+                  Dataset/Raw/File2_Raw/ Dataset/Raw/File3_Raw/ \
+                  dashboard/public/data/dashboard.json
           git commit -m "chore: daily PSP update $(date -u +%Y-%m-%d)"
           git push
 
