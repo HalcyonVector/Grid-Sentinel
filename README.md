@@ -16,16 +16,16 @@ Answered across three eras, each using the dataset that actually covers it:
 
 | Era | Window | Dataset(s) | What it answers |
 |---|---|---|---|
-| **1 — Pre-corridor** | 2019-2022 | `study1_daily` + `study1_hourly` | Intra-day ramp characteristics and RES-share growth trend |
-| **2 — Corridor-visible** | 2023-Oct 2024 | `study1_daily` | Does corridor congestion / cross-border exchange correlate with daily frequency-band stress? |
-| **3 — Live SCADA** | Nov 2024-present | `study2_scada` | 15-minute-resolution violation and ramp-shock risk, with corridor-aware lead-time classification |
+| **1: Pre-corridor** | 2019-2022 | `study1_daily` + `study1_hourly` | Intra-day ramp characteristics and RES-share growth trend |
+| **2: Corridor-visible** | 2023-Oct 2024 | `study1_daily` | Does corridor congestion / cross-border exchange correlate with daily frequency-band stress? |
+| **3: Live SCADA** | Nov 2024-present | `study2_scada` | 15-minute-resolution violation and ramp-shock risk, with corridor-aware lead-time classification |
 
 ---
 
 ## Findings
 
-- **Season-controlled evidence that rising RES share correlates with increased grid stress at 15-minute resolution** once SCADA-resolution visibility exists (Nov 2024 onward) — the first granular result of its kind for the Indian grid, complementing macro-level policy findings rather than just restating them.
-- **Inter-regional corridor flow acts as a stress-relief signal, not a stress-causing one** — a moderate negative correlation with next-day frequency instability.
+- **Season-controlled evidence that rising RES share correlates with increased grid stress at 15-minute resolution** once SCADA-resolution visibility exists (Nov 2024 onward): the first granular result of its kind for the Indian grid, complementing macro-level policy findings rather than just restating them.
+- **Inter-regional corridor flow acts as a stress-relief signal, not a stress-causing one**: a moderate negative correlation with next-day frequency instability.
 - **Grid stress has a genuine day-of-week decoupling**: Sunday has the week's highest frequency-violation rate but its lowest ramp-shock rate, consistent with thinner online reserve margins on a low-demand day.
 - **Ramp-shock classifier is strong** (PR-AUC 0.746 vs. 0.177 base rate, ~4.2x lift); **frequency-violation classifier is real but modest** (PR-AUC 0.154 vs. 0.031 base rate, ~5.0x lift). The gap between the two is itself evidence they are mechanistically different phenomena, not two flavors of the same thing.
 - **A demand-side hypothesis was tested and falsified rather than assumed**: ramp-shocks do not precede frequency violations more than chance, reported as a documented dead end, not hidden.
@@ -55,9 +55,9 @@ Row counts grow daily and should be treated as a snapshot, not a live figure. Fu
 
 | Study | Target | Model | Result |
 |-------|--------|-------|--------|
-| **Study 1 — Daily load forecasting** | Next-day peak demand (MW) / energy met (MU) | LightGBM, retrained daily | See `ML/Study1/notebooks/03_baseline.ipynb` |
-| **Study 2 — Frequency-violation classifier** | Binary: frequency violation in a 15-min slot? | LightGBM, retrained daily | PR-AUC 0.154 vs. 0.031 base rate |
-| **Study 2 — Ramp-shock classifier** | Binary: sudden demand/generation swing in a 15-min slot? | LightGBM, retrained daily | PR-AUC 0.746 vs. 0.177 base rate |
+| **Study 1: Daily load forecasting** | Next-day peak demand (MW) / energy met (MU) | LightGBM, retrained daily | See `ML/Study1/notebooks/03_baseline.ipynb` |
+| **Study 2: Frequency-violation classifier** | Binary: frequency violation in a 15-min slot? | LightGBM, retrained daily | PR-AUC 0.154 vs. 0.031 base rate |
+| **Study 2: Ramp-shock classifier** | Binary: sudden demand/generation swing in a 15-min slot? | LightGBM, retrained daily | PR-AUC 0.746 vs. 0.177 base rate |
 
 Both classifiers retrain from scratch on every CI run (training takes seconds at this dataset size), output daily 96-slot risk timelines, and are wired into the same GitHub Actions pipeline that scrapes and publishes the data.
 
@@ -73,7 +73,7 @@ Grid-Sentinel/
 ├── Reference/           External source data (hourly load dataset from Kaggle)
 ├── Scrapings/           Parsers and download scripts for the NLDC/Grid-India CDN
 ├── dashboard/           React + Vite + Tailwind + Recharts dashboard, deployed on Vercel
-├── .github/workflows/   daily_scrape.yml — CI pipeline (scrape, build, train, publish)
+├── .github/workflows/   daily_scrape.yml, CI pipeline (scrape, build, train, publish)
 └── ROADMAP.md           Full project history, phase-by-phase, kept current as work lands
 ```
 
@@ -112,7 +112,7 @@ See [ROADMAP.md](ROADMAP.md) for the full build/validate command reference and [
 
 ## Known limitations
 
-- `study1_daily` / `study1_hourly` have 69 individually-root-caused missing dates (mostly duplicate NLDC republishes during the 2020 COVID era, plus a handful of genuine archive gaps) — source-level absences, not parser failures.
+- `study1_daily` / `study1_hourly` have 69 individually-root-caused missing dates (mostly duplicate NLDC republishes during the 2020 COVID era, plus a handful of genuine archive gaps): source-level absences, not parser failures.
 - `study2_scada` has 17 dates with no rows (PDF-only source days, which cannot contain 15-minute SCADA data) and 3 severely corrupted days dropped before training.
 - IR-Line and cross-border columns are only available from ~2023 onward, when NLDC began publishing that section.
 - The frequency-violation classifier is a real but modest baseline (PR-AUC 0.154), reported honestly rather than oversold.
@@ -131,4 +131,4 @@ Full detail, including per-date root causes, lives in [Dataset/README.md](Datase
 
 ## License
 
-Code is MIT licensed — see [LICENSE](./LICENSE). The published dataset is CC BY-SA 4.0 — see [Dataset/README.md](Dataset/README.md#license) for the dataset-specific terms.
+Code is MIT licensed, see [LICENSE](./LICENSE). The published dataset is CC BY-SA 4.0, see [Dataset/README.md](Dataset/README.md#license) for the dataset-specific terms.

@@ -1,6 +1,6 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-19 — dashboard deployed publicly on Vercel, live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/), closing Phase 5's last open item. Also: removed `Scrapings/download_psp_old.py` and `download_psp_both.py` (superseded, unreferenced-anywhere-else predecessors of `download_psp_new.py`); dropped the two in-app references to specific notebook filenames in the Historical Explorer's Era 1/Era 2 tabs (implementation detail, not something a visitor needs); added a root `README.md`; added Abhirami as a second author/collaborator (ML, Phase 3+)._
+_Last updated: 2026-07-19: dashboard deployed publicly on Vercel, live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/), closing Phase 5's last open item. Also: removed `Scrapings/download_psp_old.py` and `download_psp_both.py` (superseded, unreferenced-anywhere-else predecessors of `download_psp_new.py`); dropped the two in-app references to specific notebook filenames in the Historical Explorer's Era 1/Era 2 tabs (implementation detail, not something a visitor needs); added a root `README.md`; added Abhirami as a second author/collaborator (ML, Phase 3+)._
 
 _Previous update, 2026-07-14 — added the model-diagnostic and table-to-chart visualizations Sagnik asked for across both studies (feature-importance bars, PR curves, confusion matrices, hour×dow heatmap, Era 2 corridor-correlation bars, month/solar-hour/RES-share bars), then, while deciding whether anything else was worth adding, found a real methodology bug: both Study 2 classifiers' "best-F1 operating point" and "recall at ≥95% precision" numbers were selected by scanning the TEST set's own precision-recall curve for its best point — reporting the best-in-hindsight threshold rather than an honestly out-of-sample one. Fixed by selecting the threshold on VAL and freezing it before applying to TEST. PR-AUC (threshold-free) is unaffected, but the operating-point numbers shifted: violation classifier's honest best-F1 is now 0.1843/precision 20.8%/recall 16.6% (was a hindsight-inflated 0.2035/17.7%/24.0%), and — the bigger finding — the ramp-shock classifier's previously-quoted "recall at ≥95% precision = 20.4%" collapses to 0.3% once evaluated honestly; that headline number was almost entirely a hindsight-overfitting artifact. See Phase 4's classifier sections below for full corrected numbers._
 
@@ -28,7 +28,7 @@ Grid-Sentinel is a machine learning project for **predicting and detecting stres
 
 ### End goals
 
-1. **Dashboard** (public, live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/), deployed on Vercel) — a real-time web dashboard that shows both live NLDC data as it comes in and model predictions overlaid. Also includes an interactive explorer of the full historical dataset (2019–present). Intended as a portfolio/résumé artefact.
+1. **Dashboard** (public, live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/), deployed on Vercel): a real-time web dashboard that shows both live NLDC data as it comes in and model predictions overlaid. Also includes an interactive explorer of the full historical dataset (2019–present). Intended as a portfolio/résumé artefact.
 2. **Research paper** (conditional) — if model results are strong enough, publish to an IEEE Power & Energy conference or a journal like *Electric Power Systems Research*. Decision deferred until Phase 3/4 outputs are in hand.
 3. **Kaggle dataset** (ongoing) — four cleaned CSVs published and auto-updated daily (a fourth, `study3_states.csv`, added in Phase 2), serving as a public resource for the broader community.
 
@@ -728,7 +728,7 @@ The original plan ("frontend reads the committed CSVs/JSON directly") undersold 
 1. ~~Once Phase 3's baseline model is trained, write `ML/Study1/predict.py`~~ **Done 2026-07-10.**
 2. ~~Once Phase 4's baseline model is trained, write `ML/Study2/predict.py`~~ **Done 2026-07-11.**
 3. ~~Build the dashboard~~ **Done 2026-07-17** — all 6 panels, tested locally.
-4. ~~Deploy to Vercel~~ **Done 2026-07-19** — live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/).
+4. ~~Deploy to Vercel~~ **Done 2026-07-19**, live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/).
 
 ### Technical stack (as built)
 
