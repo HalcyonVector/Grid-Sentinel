@@ -27,7 +27,7 @@ export default function ForecastPanel({ forecast }) {
   return (
     <SectionCard
       title="Study 1: Next-Day Demand Forecast"
-      subtitle="LightGBM baseline, retrained daily on all available history. See 03_baseline.ipynb for verified evaluation numbers."
+      subtitle="LightGBM baseline, retrained daily on all available history."
       accent="violet"
     >
       <StatGrid>

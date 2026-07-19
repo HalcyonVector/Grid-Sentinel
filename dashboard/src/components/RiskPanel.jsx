@@ -34,7 +34,7 @@ export default function RiskPanel({ risk }) {
   return (
     <SectionCard
       title="Study 2: Risk Timeline"
-      subtitle="96-slot (15-min) frequency-violation and ramp-shock risk. Weak-but-real signal for violation risk, strong for ramp-shock. See ROADMAP.md for honest, out-of-sample PR-AUC numbers."
+      subtitle="96-slot (15-min) frequency-violation and ramp-shock risk. Weak-but-real signal for violation risk, strong for ramp-shock."
       accent="rose"
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">

@@ -126,7 +126,7 @@ export default function ResearchFindings({ hourDowHeatmap, monthSeasonality, sol
   return (
     <SectionCard
       title="Research Findings"
-      subtitle="The full set of verified findings from Phase 3/4's notebooks, not just the live operational panels above. Every number here is reproduced from the same aggregation logic as ML/Study1 and ML/Study2's notebooks, re-verified against the already-published results in ROADMAP.md."
+      subtitle="The full set of verified findings, not just the live operational panels above."
       accent="violet"
     >
       <div className="space-y-6">

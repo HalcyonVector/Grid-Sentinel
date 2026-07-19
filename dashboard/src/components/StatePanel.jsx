@@ -18,7 +18,7 @@ export default function StatePanel({ study3Latest }) {
   return (
     <SectionCard
       title="State-Level Snapshot"
-      subtitle="From study3_states.csv, the third published study, otherwise unused elsewhere in this dashboard. Latest date's per-state demand and shortage."
+      subtitle="Latest date's per-state demand and shortage."
       accent="emerald"
     >
       <StatGrid>
