@@ -14,7 +14,7 @@ export function SectionCard({ title, subtitle, children, accent = 'sky' }) {
       {title && (
         <div className="mb-5">
           <h2 className="text-lg font-semibold tracking-tight text-slate-50 sm:text-xl">{title}</h2>
-          {subtitle && <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-slate-400">{subtitle}</p>}
+          {subtitle && <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{subtitle}</p>}
         </div>
       )}
       {children}
