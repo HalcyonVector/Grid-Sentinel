@@ -123,13 +123,8 @@ Full detail, including per-date root causes, lives in [Dataset/README.md](Datase
 
 ## Authors
 
-**Sagnik** — data pipeline: scraping, parsing, dataset construction, and validation (Phases 0-2)
-
-GitHub: [@HalcyonVector](https://github.com/HalcyonVector)
-
-**Abhirami** — modelling: feature engineering, baseline classifiers, and research findings (Phase 3+)
-
-GitHub: [@menaegerie](https://github.com/menaegerie)
+**Sagnik** [@HalcyonVector](https://github.com/HalcyonVector)
+**Abhirami** [@menaegerie](https://github.com/menaegerie)
 
 ---
 
