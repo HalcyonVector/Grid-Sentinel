@@ -100,8 +100,7 @@ function Era1Tab({ era1Monthly }) {
     <div>
       <p className="mb-4 text-sm leading-relaxed text-slate-400">
         Non-live, historical: intra-day ramp magnitude (max hour-to-hour demand swing) tracked against rising RES share, both
-        indexed to a common 0–100 scale (each series' own min-max), never a dual-axis chart. From{' '}
-        <code className="rounded bg-white/10 px-1.5 py-0.5 text-slate-300">04_era1_ramp_characterization.ipynb</code>.
+        indexed to a common 0–100 scale (each series' own min-max), never a dual-axis chart.
       </p>
       <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
         <div className="h-72">
@@ -156,8 +155,7 @@ function Era2Tab({ era2CorridorCorr }) {
     <div>
       <p className="mb-4 text-sm leading-relaxed text-slate-400">
         Non-live, historical: daily-resolution correlation between corridor/cross-border power flow and same-day frequency
-        stress. Blue = flow relieves stress; red = flow coincides with stress. From{' '}
-        <code className="rounded bg-white/10 px-1.5 py-0.5 text-slate-300">00_era2_daily_correlation.ipynb</code>.
+        stress. Blue = flow relieves stress; red = flow coincides with stress.
       </p>
       <div className="space-y-4">
         <CorrBar title="Corridor flow vs. frequency stress" bars={corridor} />

@@ -37,6 +37,8 @@ if you're testing a change to the aggregation logic itself.
 
 ## Deploying to Vercel
 
+Live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/).
+
 1. [Import this repo on Vercel](https://vercel.com/new).
 2. Set **Root Directory** to `dashboard`.
 3. Framework preset should auto-detect as **Vite**: build command

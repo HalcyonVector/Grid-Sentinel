@@ -1,6 +1,8 @@
 # Grid-Sentinel — Roadmap
 
-_Last updated: 2026-07-14 — added the model-diagnostic and table-to-chart visualizations Sagnik asked for across both studies (feature-importance bars, PR curves, confusion matrices, hour×dow heatmap, Era 2 corridor-correlation bars, month/solar-hour/RES-share bars), then, while deciding whether anything else was worth adding, found a real methodology bug: both Study 2 classifiers' "best-F1 operating point" and "recall at ≥95% precision" numbers were selected by scanning the TEST set's own precision-recall curve for its best point — reporting the best-in-hindsight threshold rather than an honestly out-of-sample one. Fixed by selecting the threshold on VAL and freezing it before applying to TEST. PR-AUC (threshold-free) is unaffected, but the operating-point numbers shifted: violation classifier's honest best-F1 is now 0.1843/precision 20.8%/recall 16.6% (was a hindsight-inflated 0.2035/17.7%/24.0%), and — the bigger finding — the ramp-shock classifier's previously-quoted "recall at ≥95% precision = 20.4%" collapses to 0.3% once evaluated honestly; that headline number was almost entirely a hindsight-overfitting artifact. See Phase 4's classifier sections below for full corrected numbers._
+_Last updated: 2026-07-19 — dashboard deployed publicly on Vercel, live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/), closing Phase 5's last open item. Also: removed `Scrapings/download_psp_old.py` and `download_psp_both.py` (superseded, unreferenced-anywhere-else predecessors of `download_psp_new.py`); dropped the two in-app references to specific notebook filenames in the Historical Explorer's Era 1/Era 2 tabs (implementation detail, not something a visitor needs); added a root `README.md`; added Abhirami as a second author/collaborator (ML, Phase 3+)._
+
+_Previous update, 2026-07-14 — added the model-diagnostic and table-to-chart visualizations Sagnik asked for across both studies (feature-importance bars, PR curves, confusion matrices, hour×dow heatmap, Era 2 corridor-correlation bars, month/solar-hour/RES-share bars), then, while deciding whether anything else was worth adding, found a real methodology bug: both Study 2 classifiers' "best-F1 operating point" and "recall at ≥95% precision" numbers were selected by scanning the TEST set's own precision-recall curve for its best point — reporting the best-in-hindsight threshold rather than an honestly out-of-sample one. Fixed by selecting the threshold on VAL and freezing it before applying to TEST. PR-AUC (threshold-free) is unaffected, but the operating-point numbers shifted: violation classifier's honest best-F1 is now 0.1843/precision 20.8%/recall 16.6% (was a hindsight-inflated 0.2035/17.7%/24.0%), and — the bigger finding — the ramp-shock classifier's previously-quoted "recall at ≥95% precision = 20.4%" collapses to 0.3% once evaluated honestly; that headline number was almost entirely a hindsight-overfitting artifact. See Phase 4's classifier sections below for full corrected numbers._
 
 _Previous update, 2026-07-11 (past midnight) — while actually walking Sagnik through the Colab setup, two real things turned up: (1) a genuine security concern (a real Kaggle key almost got typed into a notebook cell headed for the public repo) — resolved by switching to Colab's Secrets manager instead of hardcoded credentials, documented in "ML Development Environment"; (2) built `study1_run_all.ipynb` / `study2_run_all.ipynb`, one-file-per-study convenience notebooks that concatenate each study's stages so a collaborator can open and run just one file — and while assembling Study 1's, found a real bug in `04_era1_ramp_characterization.ipynb` (wrong datetime format, would have crashed if actually run against live data, apparently never re-confirmed since Phase 3). Fixed and re-verified end to end._
 
@@ -26,7 +28,7 @@ Grid-Sentinel is a machine learning project for **predicting and detecting stres
 
 ### End goals
 
-1. **GitHub dashboard** (public, live) — a real-time web dashboard hosted on GitHub Pages that shows both live NLDC data as it comes in and model predictions overlaid. Also includes an interactive explorer of the full historical dataset (2019–present). Intended as a portfolio/résumé artefact.
+1. **Dashboard** (public, live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/), deployed on Vercel) — a real-time web dashboard that shows both live NLDC data as it comes in and model predictions overlaid. Also includes an interactive explorer of the full historical dataset (2019–present). Intended as a portfolio/résumé artefact.
 2. **Research paper** (conditional) — if model results are strong enough, publish to an IEEE Power & Energy conference or a journal like *Electric Power Systems Research*. Decision deferred until Phase 3/4 outputs are in hand.
 3. **Kaggle dataset** (ongoing) — four cleaned CSVs published and auto-updated daily (a fourth, `study3_states.csv`, added in Phase 2), serving as a public resource for the broader community.
 
@@ -677,7 +679,9 @@ Same as Phase 3 — Google Colab, `ML/environment.yml`, dataset via Kaggle API. 
 
 ---
 
-## Phase 5 — Dashboard ✅ (built 2026-07-17, not yet deployed)
+## Phase 5 — Dashboard ✅ COMPLETE (built 2026-07-17, deployed 2026-07-19)
+
+**Live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/).**
 
 **Vision:** public site combining live data feed + model inference + historical explorer. Built in `dashboard/` as a React + Vite + Tailwind + Recharts app (not GitHub Pages/plain-JS as originally scoped below — Sagnik asked for a Vercel-deployable app matching the stack/visual design of another of his projects, [HalcyonVector/Utility-Based-Portfolio-Allocation-Agent](https://github.com/HalcyonVector/Utility-Based-Portfolio-Allocation-Agent): dark glass-card sections, radial-gradient hero, hover-lift micro-interactions. Grid-Sentinel uses its own sky-blue/amber "energy" accent rather than that project's rose, but the structural language matches).
 
@@ -705,7 +709,7 @@ This means all three CSVs appear in the dashboard for the era each one actually 
 
 ### What already exists
 
-`ML/Study1/predict.py` and `ML/Study2/predict.py` — both built, wired into CI, output `Dataset/predictions/study1_forecast.csv` and `study2_risk.csv` daily (see Phase 3/4). `dashboard/` — full React app, all 6 panels built, tested locally (dev server + production build both verified), not yet deployed publicly.
+`ML/Study1/predict.py` and `ML/Study2/predict.py` — both built, wired into CI, output `Dataset/predictions/study1_forecast.csv` and `study2_risk.csv` daily (see Phase 3/4). `dashboard/` — full React app, all 6 panels built, tested locally, deployed publicly on Vercel at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/).
 
 ### The client-fetch size problem, and how it's solved
 
@@ -724,7 +728,7 @@ The original plan ("frontend reads the committed CSVs/JSON directly") undersold 
 1. ~~Once Phase 3's baseline model is trained, write `ML/Study1/predict.py`~~ **Done 2026-07-10.**
 2. ~~Once Phase 4's baseline model is trained, write `ML/Study2/predict.py`~~ **Done 2026-07-11.**
 3. ~~Build the dashboard~~ **Done 2026-07-17** — all 6 panels, tested locally.
-4. **Deploy to Vercel — not yet done.** Needs Sagnik to import the repo on Vercel with Root Directory set to `dashboard` (see `dashboard/README.md` for exact steps); no code changes required, this is an account-level action nobody but Sagnik can do.
+4. ~~Deploy to Vercel~~ **Done 2026-07-19** — live at [grid-sentinel-vm.vercel.app](https://grid-sentinel-vm.vercel.app/).
 
 ### Technical stack (as built)
 
@@ -739,7 +743,7 @@ The original plan ("frontend reads the committed CSVs/JSON directly") undersold 
 2. ~~Phase 3 model done → export daily forecast~~ ✅ Done 2026-07-10.
 3. ~~Phase 4 model done → export slot-level risk~~ ✅ Done 2026-07-11.
 4. ~~Full dashboard consuming both + raw data~~ **Done 2026-07-17.**
-5. **Launch publicly on Vercel — pending, needs Sagnik's Vercel account.**
+5. ~~Launch publicly on Vercel~~ **Done 2026-07-19.**
 
 ---
 
